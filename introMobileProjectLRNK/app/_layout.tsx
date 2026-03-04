@@ -6,7 +6,7 @@ const RootLayout = () => {
         <Tabs>
             <Tabs.Screen
                 // Name of the dynamic route.
-                name="home/home"
+                name="index"
                 options={{
                     title: 'home',
                     headerTitle: "Playtomic",
