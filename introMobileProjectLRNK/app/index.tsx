@@ -1,6 +1,10 @@
-import React from "react";
-import {View, StyleSheet, Text, Pressable, Image, ImageSourcePropType} from "react-native";
-import {router} from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ActivityIndicator } from "react-native";
+import { Redirect, router, useFocusEffect } from "expo-router";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { FIREBASE_AUTH, FIRESTORE_DB } from "./firebase/firebaseConfig";
+
 
 interface CustomButtonProps {
     onPress: () => void;
@@ -10,7 +14,9 @@ interface CustomButtonProps {
 
 const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => {
     return (
+        
             <View style={styles.ButtonContainer}>
+            
             <Pressable
                 style={({ pressed }) => [
                     styles.circle, { opacity: pressed ? 0.6 : 1 },
@@ -25,7 +31,55 @@ const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => {
  }
 
 const App = () => {
-    return (
+    const [user, setUser] = useState<User | null>(null);
+    const [authLoaded, setAuthLoaded] = useState(false);
+    const [needsSetup, setNeedsSetup] = useState(false);
+    const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+            setUser(currentUser);
+            setAuthLoaded(true);
+            if (!currentUser) {
+                setPrefsLoaded(true);
+                setNeedsSetup(false);
+            }
+        });
+        return unsubscribe;
+    }, []);
+
+    // Re-check prefs every time this screen gains focus (e.g. after saving prefs for the first time)
+    useFocusEffect(
+        useCallback(() => {
+            if (!user) return;
+            getDoc(doc(FIRESTORE_DB, "users", user.uid)).then((snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setNeedsSetup(!data.sport && !data.level);
+                } else {
+                    setNeedsSetup(true);
+                }
+            }).finally(() => setPrefsLoaded(true));
+        }, [user])
+    );
+
+    if (!authLoaded || !prefsLoaded) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#345fff" />
+            </View>
+        );
+    }
+
+    if (!user) {
+        return <Redirect href="/Login/Login" />;
+    }
+
+    if (needsSetup) {
+        return <Redirect href="/users/Profile" />;
+    }
+
+    return(
         <View>
             <Text style={styles.welcomeText}>
                 Welcome! Hoe voel je je vandaag?
