@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebase/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -53,7 +53,11 @@ const Login = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Welkom bij Playtomic</Text>
       <TextInput
         value={username}
@@ -66,6 +70,7 @@ const Login = () => {
         value={password}
         placeholder="Wachtwoord"
         secureTextEntry={true}
+        autoCapitalize="none"
         onChangeText={setPassword}
         style={styles.input}
       />
@@ -81,7 +86,8 @@ const Login = () => {
           </Pressable>
         </>
       )}
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

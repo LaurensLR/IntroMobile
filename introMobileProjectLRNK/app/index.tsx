@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ActivityIndicator } from "react-native";
+import { View, ScrollView, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ActivityIndicator } from "react-native";
 import { Redirect, router, useFocusEffect } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE_DB } from "./firebase/firebaseConfig";
+import clubsData from "../clubs.json";
+import ClubCard, { Club } from "./Club/ClubCard";
 
 
 interface CustomButtonProps {
@@ -79,14 +81,16 @@ const App = () => {
         return <Redirect href="/users/Profile" />;
     }
 
+    const clubs: Club[] = clubsData.clubs;
+
     return(
-        <View>
+        <ScrollView>
             <Text style={styles.welcomeText}>
                 Welcome! Hoe voel je je vandaag?
             </Text>
             <View style={styles.container}>
                 <CustomButton
-                    onPress={() => router.push("/booking/booking")}
+                    onPress={() => router.push("/Club/ClubList")}
                     imageSource={require("../pictures/bookingpictogram.png")}
                     label="Boek een baan"
                 />
@@ -106,10 +110,16 @@ const App = () => {
                     label="Zoek een match"
                 />
             </View>
-            <View>
-                <Text style={styles.otherText}>Aanbevolen clubs voor jou</Text>
+            <Text style={styles.otherText}>Aanbevolen clubs voor jou</Text>
+            <View style={styles.clubList}>
+                {clubs.map((club) => (
+                    <ClubCard
+                        key={club.club_id}
+                        club={club}
+                    />
+                ))}
             </View>
-        </View>
+        </ScrollView>
     )
 }
 
@@ -152,7 +162,13 @@ const styles = StyleSheet.create({
         fontWeight: "800",
         fontSize: 17,
         marginLeft: 15,
-        marginTop: 35
+        marginTop: 35,
+        marginBottom: 12,
+    },
+    clubList: {
+        paddingHorizontal: 15,
+        gap: 12,
+        paddingBottom: 24,
     },
 })
 

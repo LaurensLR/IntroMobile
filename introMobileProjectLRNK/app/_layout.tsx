@@ -57,7 +57,8 @@ const RootLayout = () => {
             <Tabs.Screen
                 name="Community/Community"
                 options={{
-                    title: 'Community',
+                    headerTitle: 'Community',
+                    title: "Community"
                 }}
             />
             <Tabs.Screen
@@ -69,17 +70,52 @@ const RootLayout = () => {
             <Tabs.Screen
                 name="users/Profile"
                 options={{
-                    title: 'Profile',
+                    headerTitle: 'Profile',
+                    title: "Profile",
                     tabBarIcon: ({color, size}) => <FontAwesome name="address-card" size={size} color={color} />
                 }}
             />
             <Tabs.Screen
                 name="booking/booking"
-                options={{ href: null }}
+                options={{ 
+                    headerTitle: "Booking",
+                    href: null }}
+            />
+            <Tabs.Screen
+                name="Club/ClubList"
+                options={{
+                    href: null,
+                    headerTitle: "Zoek een baan",
+                    headerStyle: { backgroundColor: "#345fff" },
+                    headerTintColor: "#fff",
+                    headerTitleStyle: { fontWeight: "bold", fontSize: 24 },
+                }}
+            />
+            <Tabs.Screen
+                name="Club/ClubCard"
+                options={{
+                    href: null,
+                    headerTitle: "Zoek een baan",
+                    headerStyle: { backgroundColor: "#345fff" },
+                    headerTintColor: "#fff",
+                    headerTitleStyle: { fontWeight: "bold", fontSize: 24 },
+                }}
+            />
+            <Tabs.Screen
+                name="Club/[club_id]"
+                options={{
+                    href: null,
+                    headerTitle: "Club Details",
+                    headerStyle: { backgroundColor: "#345fff" },
+                    headerTintColor: "#fff",
+                    headerTitleStyle: { fontWeight: "bold", fontSize: 24 },
+                }}
             />
             <Tabs.Screen
                 name="Login/Login"
-                options={{ href: null }}
+                options={{
+                    headerTitle: "Login",
+                    href: null }}
             />
             <Tabs.Screen
                 name="firebase/firebaseConfig"

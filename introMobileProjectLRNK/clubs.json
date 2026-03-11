@@ -1,0 +1,126 @@
+{
+  "clubs": [
+    {
+      "club_id": 1,
+      "name": "GARRINCHA Antwerpen Noord",
+      "street": "Slachthuislaan",
+      "number": 29,
+      "zipcode": 2060,
+      "city": "Antwerpen",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "",
+      "fields": [
+        {
+          "field_id": 1,
+          "club_id": 1,
+          "field_name": "Court 1",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 2,
+          "club_id": 1,
+          "field_name": "Court 2",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 3,
+          "club_id": 1,
+          "field_name": "Court 3",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 4,
+          "club_id": 1,
+          "field_name": "Court 4",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 5,
+          "club_id": 1,
+          "field_name": "Court 5",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 6,
+          "club_id": 1,
+          "field_name": "Court 6",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "club_id": 2,
+      "name": "Padelland Linkeroever",
+      "street": "Blancefloerlaan",
+      "number": 181,
+      "zipcode": 2050,
+      "city": "Antwerpen",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "",
+      "fields": [
+        {
+          "field_id": 7,
+          "club_id": 2,
+          "field_name": "Center court",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 8,
+          "club_id": 2,
+          "field_name": "Baan 2",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 9,
+          "club_id": 2,
+          "field_name": "Baan 3",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 10,
+          "club_id": 2,
+          "field_name": "Baan 4",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 11,
+          "club_id": 2,
+          "field_name": "Baan 5",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_id": 12,
+          "club_id": 2,
+          "field_name": "Baan 6",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        }
+      ]
+    }
+  ]
+}
