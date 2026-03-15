@@ -1,14 +1,65 @@
-import {Stack, useLocalSearchParams } from "expo-router";
+import {router, Stack, useLocalSearchParams} from "expo-router";
 import React, {useEffect, useState} from "react";
-import {View, StyleSheet, Text, Image, ScrollView, TouchableHighlight, Pressable} from "react-native";
-import {Club} from "@/app/clubs/clubs";
+import {View, StyleSheet, Text, Image, ScrollView, Pressable} from "react-native";
+import {Club} from "@/app/clubs/index";
 import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 import { doc, getDoc } from "@firebase/firestore";
+import {collection, getDocs, Timestamp} from "firebase/firestore";
+import {Booking} from "@/app/booking/booking";
+import {getAuth} from "firebase/auth";
 
+type Field = {
+    id: string;
+    field_name: string;
+    locationType: string;
+    Walls: string,
+    doubles: boolean,
+}
 
-const club = () => {
+const ClubScreen = () => {
+
     const {clubId} = useLocalSearchParams<{ clubId: string }>();
     const [club, setClub] = useState<Club>();
+    const [fields, setFields] = useState<Field[]>([]);
+    const [openField, setOpenField] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchFields = async () => {
+            try {
+
+                const fieldsRef = collection(FIRESTORE_DB, "clubs", clubId, "fields");
+                const snapshot = await getDocs(fieldsRef);
+
+                const fieldsList: Field[] = snapshot.docs.map(doc => {
+                    const data = doc.data();
+
+                    return {
+                        id: doc.id,
+                        field_name: data.field_name,
+                        locationType: data.locationType,
+                        Walls: data.Walls,
+                        doubles: data.doubles
+                    };
+                }).sort((a, b) => {
+                    const numA = parseInt(a.field_name.match(/\d+/)?.[0] || "0");
+                    const numB = parseInt(b.field_name.match(/\d+/)?.[0] || "0");
+                    return numA - numB;
+                });
+
+                setFields(fieldsList);
+
+            } catch (error) {
+                console.log("Error fetching fields:", error);
+            }
+        };
+        if (!clubId) return;
+        fetchFields();
+
+    }, [clubId]);
+
+
 
     useEffect(() => {
         if (!clubId) return;
@@ -39,72 +90,103 @@ const club = () => {
         "20:00","20:30","21:00","21:30","22:00","22:30","23:00"
     ];
 
-    const weekdays = ["ma", "di", "wo", "do", "vr", "za", "zo", ""];
-    const months = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+    const weekdays: string[] = ["zo","ma","di","wo","do","vr","za"];
+    const months: string[] = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
-    const today = new Date();
+    const upcomingDays = React.useMemo(() => {
+        return Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            return d;
+        });
+    }, []);
 
-    const upcomingDays: Date[] = [];
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-    for (let i = 0; i < 7; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        upcomingDays.push(d);
+    if (!user) {
+        console.log("User niet ingelogd");
+        return;
     }
 
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
 
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    if (selectedDate && selectedTime) {
+        const [day, month] = selectedDate.split("-").map(Number);
+        const [hours, minutes] = selectedTime.split(":").map(Number);
+
+        startDate = new Date();
+        startDate.setMonth(month - 1);
+        startDate.setDate(day);
+        startDate.setHours(hours);
+        startDate.setMinutes(minutes);
+        startDate.setSeconds(0);
+
+        endDate = new Date(startDate);
+        endDate.setMinutes(endDate.getMinutes() + 60); // 60 min booking
+    }
+
+    const newBooking: Booking | null =
+        startDate && endDate && openField
+            ? {
+                clubId,
+                fieldId: openField,
+                userId: user.uid,
+                date: Timestamp.fromDate(startDate),
+                start: Timestamp.fromDate(startDate),
+                end: Timestamp.fromDate(endDate),
+                createdAt: Timestamp.now(),
+            }
+            : null;
+
+    if (!newBooking) {
+        console.log("Booking is ongeldig");
+        return;
+    }
+
     return (
         <View style={styles.container}>
-            <Stack.Screen options={{headerTitle: ``}}></Stack.Screen>
+            <Stack.Screen options={{ headerTitle: "" }} />
             {club ? (
                 <>
                     <Image style={styles.clubImage}
                            source={{ uri: club.club_image }}/>
                     <ScrollView style={styles.items}>
-                        <Text style={styles.clubName}>{club.club_name}</Text>
+                        <Text style={styles.clubName}>{club.name}</Text>
                         <Text style={styles.clubAddress}>{club.street} {club.number}, {club.zipcode} {club.city}</Text>
 
-                        <Text style={styles.space}></Text>
-
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 20 }}>
+                        {/*Dagen */}
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 20, marginTop: 20 }}>
                             {upcomingDays.map((day, index) => {
                                 const dateString = `${day.getDate()}-${day.getMonth() + 1}`;
-                                console.log(day.getDay())
                                 return (
-                                    <View key={index} style={{ alignItems: "center", margin: 5 }}>
-
+                                    <View key={index} style={styles.bookingdates}>
                                         <Text>{weekdays[day.getDay()]}</Text>
-
-
                                         <Pressable
                                             onPress={() => {
                                                 setSelectedDate(dateString);
-                                                console.log("Selected:", dateString);
                                             }}
                                             style={[
                                                 styles.date,
-                                                selectedDate === dateString ? styles.selected : null
+                                                selectedDate === dateString && styles.selected
                                             ]}
                                         >
                                             <Text>{day.getDate()}</Text>
                                         </Pressable>
-
                                         <Text>{months[day.getMonth()]}</Text>
-
                                     </View>
                                 );
                             })}
                         </View>
 
+                        {/*tijdstippen*/}
                         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center"}}>
                             {timeSlots.map((t) => (
                                 <Pressable
                                     key={t}
                                     onPress={() => {
                                         setSelectedTime(t);
-                                        console.log("Geselecteerd:", t);
                                     }}
                                     style={({ pressed }) => [
                                         styles.box,
@@ -115,6 +197,69 @@ const club = () => {
                                     <Text style={styles.text}>{t}</Text>
                                 </Pressable>
                             ))}
+                        </View>
+
+                        {/*Velden */}
+                        <View style={{marginBottom: 30}}>
+                            {fields.map((field) => {
+                                const isOpen = openField === field.id;
+
+                                return (
+                                    <View key={field.id} style={styles.fieldContainer}>
+
+                                        <Pressable
+                                            style={styles.fieldHeader}
+                                            onPress={() =>
+                                                setOpenField(isOpen ? null : field.id)
+                                            }
+                                        >
+                                            <View>
+                                                <Text style={styles.fieldTitle}>
+                                                    {field.field_name}
+                                                </Text>
+
+                                                <Text style={styles.fieldInfo}>
+                                                    {field.locationType} | {field.Walls}  | Dubbelspel
+                                                </Text>
+                                            </View>
+
+                                            <Text style={{fontSize:20}}>
+                                                {isOpen ? "⌃" : "⌄"}
+                                            </Text>
+                                        </Pressable>
+
+                                        {isOpen && (
+                                            <View style={styles.priceContainer}>
+                                                <Pressable
+                                                    style={styles.priceBox}
+                                                    onPress={() => router.push("../booking/booking")}
+                                                >
+                                                    <Text style={styles.price}>€25</Text>
+                                                    <Text>60 min</Text>
+                                                </Pressable>
+
+                                                <Pressable
+                                                    style={styles.priceBox}
+                                                    onPress={() =>
+                                                        router.push({
+                                                            pathname: "/booking/booking",
+                                                            params: {
+                                                                clubId,
+                                                                fieldId: field.id,
+                                                                date: selectedDate,
+                                                                time: selectedTime,
+                                                                duration: 60
+                                                            }
+                                                        })
+                                                    }>
+                                                    <Text style={styles.price}>€35</Text>
+                                                    <Text>90 min</Text>
+                                                </Pressable>
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            })}
                         </View>
                     </ScrollView>
 
@@ -142,6 +287,10 @@ const styles = StyleSheet.create({
     clubAddress: {
         fontSize: 10,
         paddingTop: 10
+    },
+    bookingdates: {
+        alignItems: "center",
+        marginTop: 5
     },
     items: {
         flex: 1,
@@ -177,7 +326,48 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderRadius: 25,
         margin: 4,
+    },
+    fieldContainer:{
+        borderBottomWidth: 1,
+        borderColor: "#ddd",
+        paddingVertical: 15,
+    },
+
+    fieldHeader:{
+        flexDirection:"row",
+        justifyContent:"space-between",
+        alignItems:"center"
+    },
+
+    fieldTitle:{
+        fontSize:20,
+        fontWeight:"600"
+    },
+
+    fieldInfo:{
+        color:"gray",
+        marginTop:4
+    },
+
+    priceContainer:{
+        flexDirection:"row",
+        marginTop:15,
+        gap:15
+    },
+
+    priceBox:{
+        backgroundColor:"#6C83E6",
+        padding:20,
+        borderRadius:15,
+        width:120,
+        alignItems:"center"
+    },
+
+    price:{
+        fontSize:28,
+        fontWeight:"bold",
+        color:"white"
     }
 })
 
-export default club;
+export default ClubScreen;

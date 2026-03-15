@@ -88,7 +88,7 @@ const App = () => {
             </Text>
             <View style={styles.container}>
                 <CustomButton
-                    onPress={() => router.push("/clubs/clubs")}
+                    onPress={() => router.push("/clubs")}
                     imageSource={require("../assets/images/bookingpictogram.png")}
                     label="Boek een baan"
                 />
