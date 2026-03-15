@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, Activity
 import { Redirect, router, useFocusEffect } from "expo-router";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE_DB } from "./firebase/firebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 
 
 interface CustomButtonProps {
@@ -11,6 +11,7 @@ interface CustomButtonProps {
     imageSource: ImageSourcePropType;
     label?: string;
 }
+
 
 const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => {
     return (
@@ -29,6 +30,7 @@ const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => {
         </View>
     );
  }
+
 
 const App = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -86,28 +88,28 @@ const App = () => {
             </Text>
             <View style={styles.container}>
                 <CustomButton
-                    onPress={() => router.push("/booking/booking")}
-                    imageSource={require("../pictures/bookingpictogram.png")}
+                    onPress={() => router.push("/clubs/clubs")}
+                    imageSource={require("../assets/images/bookingpictogram.png")}
                     label="Boek een baan"
                 />
                 <CustomButton
-                    onPress={() => router.push("/booking/booking")}
-                    imageSource={require("../pictures/learningPicto.png")}
+                    onPress={() => router.push("/")}
+                    imageSource={require("../assets/images/learningPicto.png")}
                     label="Leren"
                 />
                 <CustomButton
-                    onPress={() => router.push("/booking/booking")}
-                    imageSource={require("../pictures/gamePicto.png")}
+                    onPress={() => router.push("//clubs")}
+                    imageSource={require("../assets/images/gamePicto.png")}
                     label="Wedstrijden"
                 />
                 <CustomButton
-                    onPress={() => router.push("/booking/booking")}
-                    imageSource={require("../pictures/matchPicto.png")}
+                    onPress={() => router.push("//clubs")}
+                    imageSource={require("../assets/images/matchPicto.png")}
                     label="Zoek een match"
                 />
             </View>
             <View>
-                <Text style={styles.otherText}>Aanbevolen clubs voor jou</Text>
+                <Text style={styles.otherText}>Aanbevolen clubs voor jouu</Text>
             </View>
         </View>
     )

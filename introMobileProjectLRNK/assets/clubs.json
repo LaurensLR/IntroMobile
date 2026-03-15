@@ -1,0 +1,420 @@
+{
+  "clubs": [
+    {
+      "name": "GARRINCHA Antwerpen Noord",
+      "street": "Slachthuislaan",
+      "number": 29,
+      "zipcode": 2060,
+      "city": "Antwerpen",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1661178417/pro/tenants/961beb4f-b8d9-421d-b825-b01fe7effda1/1661178416632.jpg",
+      "fields": [
+        {
+          "field_name": "Court 1",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 2",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 3",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 4",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 5",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 6",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "Padelland Linkeroever",
+      "street": "Blancefloerlaan",
+      "number": 181,
+      "zipcode": 2050,
+      "city": "Antwerpen",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1750239642/pro/tenants/cba78f24-9303-4f50-8c33-5e4ccee82098/1750239641369.jpg",
+      "fields": [
+        {
+          "field_name": "Center court",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Baan 2",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Baan 3",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Baan 4",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Baan 5",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Baan 6",
+          "locationType": "inside",
+          "walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "GARRINCHA Antwerpen Zuid",
+      "street": "Lageweg",
+      "number": 356,
+      "zipcode": 2660,
+      "city": "Antwerpen",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1661179777/pro/tenants/d39534cb-c647-437e-b6b6-09ffa7a0418e/1661179776217.jpg",
+      "fields": [
+        {
+          "field_name": "Court 1",
+          "locationType": "inside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 2",
+          "locationType": "inside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 3",
+          "locationType": "inside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Court 4",
+          "locationType": "inside",
+          "Walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "Ter Eiken Edegem",
+      "street": "Kattebroek",
+      "number": 33,
+      "zipcode": 2650,
+      "city": "Edegem",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/c_limit,w_1600/v1/pro/tenants/98e6583b-0ba1-4f15-8129-720205de3f4e/tereiken_0001",
+      "fields": [
+        {
+          "field_name": "Padel 1",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 2",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 3",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 4",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 5",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 6",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 7",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 8",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 9",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 10",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 11",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 12",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 13",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 14",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 15",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 16",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "Padel Sporthaven Mortsel",
+      "street": "Gasthuishoeven",
+      "number": 2,
+      "zipcode": 2640,
+      "city": "Mortsel",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1676818535/pro/tenants/15127c2d-512a-44e0-b18f-52faed3ee9a0/1676818534498.jpg",
+      "fields": [
+        {
+          "field_name": "Padelveld 1",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelveld 2",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelveld 3",
+          "locationType": "covered",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelveld 4",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelveld 5",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelveld 6",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "SPORTVERENIGING ZEVENBERGEN LIER",
+      "street": "Antwerpsesteenweg",
+      "number": 493,
+      "zipcode": 2500,
+      "city": "Lier",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1689413189/pro/tenants/e7fb53c4-b550-4847-8ced-06c9c514ffb5/1689413189128.jpg",
+      "fields": [
+        {
+          "field_name": "Padel 1",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 2",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 3",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 4",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 5",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padel 6",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "Open padel Ranst",
+      "street": "Ranstsesteenweg",
+      "number": 86,
+      "zipcode": 2520,
+      "city": "Ranst",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1649254149/pro/tenants/2b0af113-70a9-4ad2-a54c-b0bcf20f596b/1649254149170.jpg",
+      "fields": [
+        {
+          "field_name": "Crystal 1",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Crystal 2",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Crystal 3",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Crystal 4",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Panoramic 1",
+          "locationType": "outside",
+          "Walls": "Panoramic",
+          "doubles": true
+        }
+      ]
+    },
+    {
+      "name": "Padel Vorselaar",
+      "street": "Oostakker",
+      "number": "1C",
+      "zipcode": 2290,
+      "city": "Vorselaar",
+      "province": "Antwerpen",
+      "country": "België",
+      "opening_hours": "08:00 - 23:00",
+      "club_image": "https://res.cloudinary.com/playtomic/image/upload/v1672757516/pro/tenants/dab31362-b645-4d96-85aa-e6c6f18193e4/1672757514749.jpg",
+      "fields": [
+        {
+          "field_name": "All For Padel' - Terrein 1",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Padelkiosk' - Terrein 2",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        },
+        {
+          "field_name": "Redsport Padel' - Terrein 3",
+          "locationType": "outside",
+          "Walls": "glass",
+          "doubles": true
+        }
+      ]
+    }
+  ]
+}

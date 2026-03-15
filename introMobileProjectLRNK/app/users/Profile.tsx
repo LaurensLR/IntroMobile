@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
-import { FIREBASE_AUTH, FIRESTORE_DB } from "../firebase/firebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 import { signOut, onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { router } from "expo-router";
+import { seeding } from "@/app/firebase/seedClubs"
 
 type Sport = "tennis" | "padel";
 type Level = "beginner" | "intermediate" | "pro";
@@ -177,6 +178,10 @@ const Profile = () => {
 
             <Pressable onPress={logout} style={styles.logoutBtn}>
                 <Text style={styles.logoutBtnText}>Uitloggen</Text>
+            </Pressable>
+
+            <Pressable onPress={seeding} style={styles.logoutBtn}>
+                <Text> Seed Firestore </Text>
             </Pressable>
         </ScrollView>
     );

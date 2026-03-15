@@ -3,7 +3,7 @@ import { Tabs, usePathname } from 'expo-router';
 import { FontAwesome } from "@expo/vector-icons";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE_DB } from "./firebase/firebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 
 const RootLayout = () => {
     const [tabsVisible, setTabsVisible] = useState(false);
@@ -40,17 +40,11 @@ const RootLayout = () => {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: 'home',
                     headerTitle: "Playtomic",
                     headerTitleAlign: "left",
-                    headerStyle: {
-                        backgroundColor: "#345fff",
-                    },
+                    headerStyle: { backgroundColor: "#345fff",},
                     headerTintColor: "#fff",
-                    headerTitleStyle: {
-                        fontWeight: "bold",
-                        fontSize: 30,
-                    },
+                    headerTitleStyle: { fontWeight: "bold", fontSize: 30,},
                     tabBarIcon: ({color, size}) => <FontAwesome name="home" size={size} color={color} />
                 }}
             />
@@ -60,12 +54,7 @@ const RootLayout = () => {
                     title: 'Community',
                 }}
             />
-            <Tabs.Screen
-                name="users/[name]"
-                options={{
-                    href: null
-                }}
-            />
+
             <Tabs.Screen
                 name="users/Profile"
                 options={{
@@ -73,18 +62,11 @@ const RootLayout = () => {
                     tabBarIcon: ({color, size}) => <FontAwesome name="address-card" size={size} color={color} />
                 }}
             />
-            <Tabs.Screen
-                name="booking/booking"
-                options={{ href: null }}
-            />
-            <Tabs.Screen
-                name="Login/Login"
-                options={{ href: null }}
-            />
-            <Tabs.Screen
-                name="firebase/firebaseConfig"
-                options={{ href: null }}
-            />
+            <Tabs.Screen name="users/[name]" options={{href: null}}/>
+            <Tabs.Screen name="Login/Login" options={{ href: null }}/>
+            <Tabs.Screen name="firebase/firebaseConfig" options={{ href: null }}/>
+            <Tabs.Screen name="clubs" options={{ href: null, headerShown: false }}/>
+            <Tabs.Screen name="booking/booking" options={{ href: null }}/>
         </Tabs>
     );
 }

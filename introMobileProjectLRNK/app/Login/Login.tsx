@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet } from "react-native";
-import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebase/firebaseConfig';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { FIREBASE_AUTH, FIRESTORE_DB } from '@/app/firebase/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { router } from "expo-router";
@@ -53,35 +53,41 @@ const Login = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welkom bij Playtomic</Text>
-      <TextInput
-        value={username}
-        placeholder="Gebruikersnaam"
-        autoCapitalize="none"
-        onChangeText={setUsername}
-        style={styles.input}
-      />
-      <TextInput
-        value={password}
-        placeholder="Wachtwoord"
-        secureTextEntry={true}
-        onChangeText={setPassword}
-        style={styles.input}
-      />
-      {loading ? (
-        <ActivityIndicator size="large" color="#345fff" />
-      ) : (
-        <>
-          <Pressable onPress={signIn} style={styles.loginBtn}>
-            <Text style={styles.btnText}>Inloggen</Text>
-          </Pressable>
-          <Pressable onPress={signUp} style={styles.registerBtn}>
-            <Text style={styles.btnText}>Registreren</Text>
-          </Pressable>
-        </>
-      )}
-    </View>
+      <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Welkom bij Playtomic</Text>
+          <TextInput
+              value={username}
+              placeholder="Gebruikersnaam"
+              autoCapitalize="none"
+              onChangeText={setUsername}
+              style={styles.input}
+          />
+          <TextInput
+              value={password}
+              placeholder="Wachtwoord"
+              secureTextEntry={true}
+              autoCapitalize="none"
+              onChangeText={setPassword}
+              style={styles.input}
+          />
+          {loading ? (
+              <ActivityIndicator size="large" color="#345fff" />
+          ) : (
+              <>
+                <Pressable onPress={signIn} style={styles.loginBtn}>
+                  <Text style={styles.btnText}>Inloggen</Text>
+                </Pressable>
+                <Pressable onPress={signUp} style={styles.registerBtn}>
+                  <Text style={styles.btnText}>Registreren</Text>
+                </Pressable>
+              </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
   );
 };
 
