@@ -6,7 +6,7 @@ const BookingConfirmation = () => {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            router.replace("/home");
+            router.replace("/(tabs)/home");
         }, 300000); // 3 sec
 
         return () => clearTimeout(timeout);
@@ -23,7 +23,7 @@ const BookingConfirmation = () => {
             </Text>
             <Pressable
                 style={styles.button}
-                onPress={() => router.push("/home")}
+                onPress={() => router.push("/(tabs)/home")}
             >
                 <Text style={styles.buttonText}>Ga naar home</Text>
             </Pressable>

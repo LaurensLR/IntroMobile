@@ -47,17 +47,17 @@ const App = () => {
                         label="Boek"
                     />
                     <CustomButton
-                        onPress={() => router.push("/home")}
+                        onPress={() => router.push("/(tabs)/home")}
                         imageSource={require("../../../assets/images/learningPicto.png")}
                         label="Leren"
                     />
                     <CustomButton
-                        onPress={() => router.push("/home")}
+                        onPress={() => router.push("/(tabs)/home")}
                         imageSource={require("../../../assets/images/gamePicto.png")}
                         label="Match"
                     />
                     <CustomButton
-                        onPress={() => router.push("/home")}
+                        onPress={() => router.push("/(tabs)/home")}
                         imageSource={require("../../../assets/images/matchPicto.png")}
                         label="Zoek"
                     />

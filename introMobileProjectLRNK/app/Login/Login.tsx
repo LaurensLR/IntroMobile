@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { FIREBASE_AUTH, FIRESTORE_DB } from '@/app/firebase/firebaseConfig';
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebase/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { router } from "expo-router";
@@ -22,7 +20,7 @@ const Login = () => {
     try {
       const email = `${username.trim()}@lrnk.com`;
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/home");
+      router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Fout", "Gebruikersnaam of wachtwoord is onjuist.");
       console.log(error);
@@ -45,7 +43,7 @@ const Login = () => {
         sport: null,
         level: null,
       });
-      router.replace("/home");
+      router.replace("/(tabs)/home");
     } catch (error) {
       Alert.alert("Fout", "Gebruikersnaam is al in gebruik of het wachtwoord is te zwak.");
       console.log(error);
