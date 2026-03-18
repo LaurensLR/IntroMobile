@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { FIREBASE_AUTH, FIRESTORE_DB } from '@/app/firebase/firebaseConfig';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebase/firebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { router } from "expo-router";
