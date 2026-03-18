@@ -1,99 +1,150 @@
-import {router, Stack, useLocalSearchParams} from "expo-router";
-import React, {useEffect, useState} from "react";
-import {View, StyleSheet, Text, Image, ScrollView, Pressable} from "react-native";
-import {Club} from "@/app/clubs/index";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, StyleSheet, Text, Image, ScrollView, Pressable } from "react-native";
+import { Club } from "@/app/clubs/index";
 import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
-import { doc, getDoc } from "@firebase/firestore";
-import {collection, getDocs, Timestamp} from "firebase/firestore";
-import {Booking} from "@/app/booking/booking";
-import {getAuth} from "firebase/auth";
+import { doc, getDoc, collection, getDocs, Timestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 type Field = {
     id: string;
     field_name: string;
     locationType: string;
-    Walls: string,
-    doubles: boolean,
-}
+    walls: string;
+    doubles: boolean;
+};
+
+type Booking = {
+    fieldId: string;
+    start: Timestamp;
+    end: Timestamp;
+};
+
+const TIME_SLOTS = [
+    "08:00","08:30","09:00","09:30","10:00","10:30",
+    "11:00","11:30","12:00","12:30","13:00","13:30",
+    "14:00","14:30","15:00","15:30","16:00","16:30",
+    "17:00","17:30","18:00","18:30","19:00","19:30",
+    "20:00","20:30","21:00","21:30","22:00","22:30","23:00"
+];
+
+const WEEKDAYS = ["zo","ma","di","wo","do","vr","za"];
+const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+const BOOKING_DURATION = 60;
 
 const ClubScreen = () => {
+    const { clubId } = useLocalSearchParams<{ clubId: string }>();
 
-    const {clubId} = useLocalSearchParams<{ clubId: string }>();
     const [club, setClub] = useState<Club>();
     const [fields, setFields] = useState<Field[]>([]);
-    const [openField, setOpenField] = useState<string | null>(null);
+    const [bookings, setBookings] = useState<any[]>([]);
+
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [openField, setOpenField] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchFields = async () => {
-            try {
-
-                const fieldsRef = collection(FIRESTORE_DB, "clubs", clubId, "fields");
-                const snapshot = await getDocs(fieldsRef);
-
-                const fieldsList: Field[] = snapshot.docs.map(doc => {
-                    const data = doc.data();
-
-                    return {
-                        id: doc.id,
-                        field_name: data.field_name,
-                        locationType: data.locationType,
-                        Walls: data.Walls,
-                        doubles: data.doubles
-                    };
-                }).sort((a, b) => {
-                    const numA = parseInt(a.field_name.match(/\d+/)?.[0] || "0");
-                    const numB = parseInt(b.field_name.match(/\d+/)?.[0] || "0");
-                    return numA - numB;
-                });
-
-                setFields(fieldsList);
-
-            } catch (error) {
-                console.log("Error fetching fields:", error);
-            }
-        };
-        if (!clubId) return;
-        fetchFields();
-
-    }, [clubId]);
-
-
+    const auth = getAuth();
+    const user = auth.currentUser;
 
     useEffect(() => {
         if (!clubId) return;
 
-        const fetchClub = async () => {
+        const fetchData = async () => {
             try {
                 const docRef = doc(FIRESTORE_DB, "clubs", clubId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
-                    setClub({id: docSnap.id, ...(docSnap.data() as Omit<Club, "id">)});
-                } else {
-                    console.log("Geen club gevonden!");
+                    setClub({ id: docSnap.id, ...(docSnap.data() as Omit<Club, "id">) });
                 }
+
+                // fields
+                const fieldsRef = collection(FIRESTORE_DB, "clubs", clubId, "fields");
+                const snapshot = await getDocs(fieldsRef);
+
+                const sortedFields: Field[] = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Field))
+                    .sort((a, b) => {
+                        const numA = parseInt(a.field_name.match(/\d+/)?.[0] || "0");
+                        const numB = parseInt(b.field_name.match(/\d+/)?.[0] || "0");
+                        return numA - numB;
+                    });
+
+                setFields(sortedFields);
+
             } catch (error) {
-                console.error("Error fetching club:", error);
+                console.error("Fetch error:", error);
             }
         };
 
-        fetchClub();
+        fetchData();
     }, [clubId]);
 
-    const timeSlots = [
-        "08:00","08:30","09:00","09:30","10:00","10:30",
-        "11:00","11:30","12:00","12:30","13:00","13:30",
-        "14:00","14:30","15:00","15:30","16:00","16:30",
-        "17:00","17:30","18:00","18:30","19:00","19:30",
-        "20:00","20:30","21:00","21:30","22:00","22:30","23:00"
-    ];
+    /*
+    useEffect(() => {
+        if (!clubId || !selectedDate) return;
 
-    const weekdays: string[] = ["zo","ma","di","wo","do","vr","za"];
-    const months: string[] = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+        const fetchBookings = async () => {
+            try {
+                const ref = collection(FIRESTORE_DB, "bookings");
+                const snapshot = await getDocs(ref);
 
-    const upcomingDays = React.useMemo(() => {
+                const data = snapshot.docs.map(doc => ({
+                    ...(doc.data())
+                }));
+
+                setBookings(data);
+                console.log(data)
+
+            } catch (error) {
+                console.error("Error fetching bookings:", error);
+            }
+        };
+
+        fetchBookings();
+    }, [clubId, selectedDate]); */
+
+    const isSlotBooked = (time: string, duration: number) => {
+        if (!selectedDate) return false;
+
+        const [day, month] = selectedDate.split("-").map(Number);
+        const [hours, minutes] = time.split(":").map(Number);
+
+        const start = new Date(new Date().getFullYear(), month - 1, day, hours, minutes);
+        const end = new Date(start);
+        end.setMinutes(end.getMinutes() + duration);
+
+        return bookings.some(b => {
+            const bStart = b.start.toDate();
+            const bEnd = b.end.toDate();
+            return start < bEnd && end > bStart;
+        });
+    };
+
+    const availableTimeSlots = useMemo(() => {
+        if (!selectedDate) return TIME_SLOTS;
+
+        const now = new Date();
+        const [day, month] = selectedDate.split("-").map(Number);
+
+        const isToday =
+            now.getDate() === day &&
+            now.getMonth() + 1 === month;
+
+        if (!isToday) return TIME_SLOTS;
+
+        return TIME_SLOTS.filter(time => {
+            const [h, m] = time.split(":").map(Number);
+            const date = new Date();
+            date.setHours(h, m, 0);
+            return date > now;
+        });
+    }, [selectedDate]);
+
+    const upcomingDays = useMemo(() => {
         return Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() + i);
@@ -101,172 +152,125 @@ const ClubScreen = () => {
         });
     }, []);
 
-    const auth = getAuth();
-    const user = auth.currentUser;
+    if (!user) return <Text>Niet ingelogd</Text>;
+    if (!club) return <Text>Laden...</Text>;
 
-    if (!user) {
-        console.log("User niet ingelogd");
-        return;
-    }
+    const handleBooking = (field: Field, duration: number, price: number) => {
+        if (!selectedDate || !selectedTime) {
+            alert("Kies eerst datum en tijd");
+            return;
+        }
 
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-
-    if (selectedDate && selectedTime) {
-        const [day, month] = selectedDate.split("-").map(Number);
-        const [hours, minutes] = selectedTime.split(":").map(Number);
-
-        startDate = new Date();
-        startDate.setMonth(month - 1);
-        startDate.setDate(day);
-        startDate.setHours(hours);
-        startDate.setMinutes(minutes);
-        startDate.setSeconds(0);
-
-        endDate = new Date(startDate);
-        endDate.setMinutes(endDate.getMinutes() + 60); // 60 min booking
-    }
-
-    const newBooking: Booking | null =
-        startDate && endDate && openField
-            ? {
+        router.push({
+            pathname: "/booking/booking",
+            params: {
                 clubId,
-                fieldId: openField,
-                userId: user.uid,
-                date: Timestamp.fromDate(startDate),
-                start: Timestamp.fromDate(startDate),
-                end: Timestamp.fromDate(endDate),
-                createdAt: Timestamp.now(),
+                club_name: club.name,
+                fieldId: field.id,
+                field_name: field.field_name,
+                selectedDate,
+                selectedTime,
+                duration,
+                price,
+                userId: user.uid
             }
-            : null;
-
-    if (!newBooking) {
-        console.log("Booking is ongeldig");
-        return;
-    }
+        });
+    };
 
     return (
         <View style={styles.container}>
-            <Stack.Screen options={{ headerTitle: "" }} />
-            {club ? (
-                <>
-                    <Image style={styles.clubImage}
-                           source={{ uri: club.club_image }}/>
-                    <ScrollView style={styles.items}>
-                        <Text style={styles.clubName}>{club.name}</Text>
-                        <Text style={styles.clubAddress}>{club.street} {club.number}, {club.zipcode} {club.city}</Text>
+            <Image style={styles.clubImage} source={{ uri: club.club_image }} />
+            <ScrollView style={styles.items}>
+                <Text style={styles.clubName}>{club.name}</Text>
+                <Text style={styles.clubAddress}>
+                    {club.street} {club.number}, {club.zipcode} {club.city}
+                </Text>
 
-                        {/*Dagen */}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 20, marginTop: 20 }}>
-                            {upcomingDays.map((day, index) => {
-                                const dateString = `${day.getDate()}-${day.getMonth() + 1}`;
-                                return (
-                                    <View key={index} style={styles.bookingdates}>
-                                        <Text>{weekdays[day.getDay()]}</Text>
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedDate(dateString);
-                                            }}
-                                            style={[
-                                                styles.date,
-                                                selectedDate === dateString && styles.selected
-                                            ]}
-                                        >
-                                            <Text>{day.getDate()}</Text>
-                                        </Pressable>
-                                        <Text>{months[day.getMonth()]}</Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-
-                        {/*tijdstippen*/}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center"}}>
-                            {timeSlots.map((t) => (
+                {/* DATE */}
+                <View style={styles.row}>
+                    {upcomingDays.map((day, i) => {
+                        const dateStr = `${day.getDate()}-${day.getMonth() + 1}`;
+                        return (
+                            <View key={i} style={styles.bookingDates}>
+                                <Text>{WEEKDAYS[day.getDay()]}</Text>
                                 <Pressable
-                                    key={t}
-                                    onPress={() => {
-                                        setSelectedTime(t);
-                                    }}
-                                    style={({ pressed }) => [
-                                        styles.box,
-                                        selectedTime === t ? styles.selected : null,
-                                        pressed ? styles.pressed : null
+                                    onPress={() =>
+                                        setSelectedDate(prev => prev === dateStr ? null : dateStr)
+                                    }
+                                    style={[
+                                        styles.date,
+                                        selectedDate === dateStr && styles.selected
                                     ]}
                                 >
-                                    <Text style={styles.text}>{t}</Text>
+                                    <Text>{day.getDate()}</Text>
                                 </Pressable>
-                            ))}
-                        </View>
+                                <Text>{MONTHS[day.getMonth()]}</Text>
+                            </View>
+                        );
+                    })}
+                </View>
 
-                        {/*Velden */}
-                        <View style={{marginBottom: 30}}>
-                            {fields.map((field) => {
-                                const isOpen = openField === field.id;
+                {/* TIME */}
+                <View style={styles.row}>
+                    {availableTimeSlots.map(t => {
+                        const booked = isSlotBooked(t, BOOKING_DURATION);
+                        return (
+                            <Pressable
+                                key={t}
+                                disabled={booked}
+                                onPress={() =>
+                                    setSelectedTime(prev => prev === t ? null : t)
+                                }
+                                style={[
+                                    styles.box,
+                                    selectedTime === t && styles.selected,
+                                    booked && styles.disabled]}
+                            >
+                                <Text style={[styles.text, booked && styles.disabledText]}>
+                                    {t}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
 
-                                return (
-                                    <View key={field.id} style={styles.fieldContainer}>
+                {/* FIELDS */}
+                {fields.map(field => {
+                    const isOpen = openField === field.id;
+                    const isValid = selectedDate && selectedTime;
 
+                    return (
+                        <View key={field.id} style={styles.fieldContainer}>
+                            <Pressable
+                                style={styles.fieldHeader}
+                                onPress={() => setOpenField(isOpen ? null : field.id)}
+                            >
+                                <View>
+                                    <Text style={styles.fieldTitle}>{field.field_name}</Text>
+                                    <Text style={styles.fieldInfo}>{field.locationType} | {field.walls} | Dubbelspel</Text>
+                                </View>
+                                <Text>{isOpen ? "▲" : "▼"}</Text>
+                            </Pressable>
+
+                            {isOpen && (
+                                <View style={styles.priceContainer}>
+                                    {[{ d: 60, p: 25 }, { d: 90, p: 35 }].map(opt => (
                                         <Pressable
-                                            style={styles.fieldHeader}
-                                            onPress={() =>
-                                                setOpenField(isOpen ? null : field.id)
-                                            }
+                                            key={opt.d}
+                                            disabled={!isValid}
+                                            style={[styles.priceBox, !isValid && styles.disabled]}
+                                            onPress={() => handleBooking(field, opt.d, opt.p)}
                                         >
-                                            <View>
-                                                <Text style={styles.fieldTitle}>
-                                                    {field.field_name}
-                                                </Text>
-
-                                                <Text style={styles.fieldInfo}>
-                                                    {field.locationType} | {field.Walls}  | Dubbelspel
-                                                </Text>
-                                            </View>
-
-                                            <Text style={{fontSize:20}}>
-                                                {isOpen ? "⌃" : "⌄"}
-                                            </Text>
+                                            <Text style={styles.price}>€{opt.p}</Text>
+                                            <Text>{opt.d} min</Text>
                                         </Pressable>
-
-                                        {isOpen && (
-                                            <View style={styles.priceContainer}>
-                                                <Pressable
-                                                    style={styles.priceBox}
-                                                    onPress={() => router.push("../booking/booking")}
-                                                >
-                                                    <Text style={styles.price}>€25</Text>
-                                                    <Text>60 min</Text>
-                                                </Pressable>
-
-                                                <Pressable
-                                                    style={styles.priceBox}
-                                                    onPress={() =>
-                                                        router.push({
-                                                            pathname: "/booking/booking",
-                                                            params: {
-                                                                clubId,
-                                                                fieldId: field.id,
-                                                                date: selectedDate,
-                                                                time: selectedTime,
-                                                                duration: 60
-                                                            }
-                                                        })
-                                                    }>
-                                                    <Text style={styles.price}>€35</Text>
-                                                    <Text>90 min</Text>
-                                                </Pressable>
-                                            </View>
-                                        )}
-                                    </View>
-                                );
-                            })}
+                                    ))}
+                                </View>
+                            )}
                         </View>
-                    </ScrollView>
-
-                </>
-            ) : (
-                <Text>Laden...</Text>
-            )}
+                    );
+                })}
+            </ScrollView>
         </View>
     );
 };
@@ -274,100 +278,115 @@ const ClubScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    clubName: {
-        fontSize: 25,
-        fontWeight: "bold",
+        backgroundColor: "#f5f6fa",
     },
     clubImage: {
         width: "100%",
         height: "30%",
         resizeMode: "cover",
     },
-    clubAddress: {
-        fontSize: 10,
-        paddingTop: 10
-    },
-    bookingdates: {
-        alignItems: "center",
-        marginTop: 5
-    },
     items: {
         flex: 1,
-        padding: 10,
+        padding: 16,
     },
-    space: {
-        padding: 5
+    clubName: {
+        fontSize: 24,
+        fontWeight: "700",
+        color: "#2c3e50",
+        marginTop: 10,
     },
-    box: {
-        width: 50,
-        height: 50,
-        backgroundColor: "#e4e4e4",
-        justifyContent: "center",
+    clubAddress: {
+        fontSize: 13,
+        color: "#7f8c8d",
+        marginTop: 5,
+    },
+    bookingDates: {
         alignItems: "center",
-        borderRadius: 8,
-        margin: 5,
-    },
-    selected: {
-        backgroundColor: "#b3b3b3",
-    },
-    pressed: {
-        opacity: 0.7,
-    },
-    text: {
-        color: "#000",
-        fontWeight: "bold",
+        marginHorizontal: 6,
     },
     date: {
-        width: 35,
-        height: 35,
-        backgroundColor: "#e4e4e4",
+        width: 40,
+        height: 40,
+        borderRadius: 21,
+        backgroundColor: "#ecf0f1",
         justifyContent: "center",
         alignItems: "center",
-        borderRadius: 25,
-        margin: 4,
-    },
-    fieldContainer:{
-        borderBottomWidth: 1,
-        borderColor: "#ddd",
-        paddingVertical: 15,
+        marginVertical: 6,
     },
 
-    fieldHeader:{
-        flexDirection:"row",
-        justifyContent:"space-between",
-        alignItems:"center"
+    selected: {
+        backgroundColor: "#0984e3",
     },
-
-    fieldTitle:{
-        fontSize:20,
-        fontWeight:"600"
+    box: {
+        width: 65,
+        height: 45,
+        backgroundColor: "#ecf0f1",
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 10,
+        margin: 6,
     },
-
-    fieldInfo:{
-        color:"gray",
-        marginTop:4
+    text: {
+        fontWeight: "600",
+        color: "#2c3e50",
     },
+    fieldContainer: {
+        backgroundColor: "#ffffff",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 15,
 
-    priceContainer:{
-        flexDirection:"row",
-        marginTop:15,
-        gap:15
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
     },
-
-    priceBox:{
-        backgroundColor:"#6C83E6",
-        padding:20,
-        borderRadius:15,
-        width:120,
-        alignItems:"center"
+    fieldHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
-
-    price:{
-        fontSize:28,
-        fontWeight:"bold",
-        color:"white"
-    }
-})
+    fieldTitle: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#2c3e50",
+    },
+    fieldInfo: {
+        fontSize: 13,
+        color: "#7f8c8d",
+        marginTop: 4,
+    },
+    priceContainer: {
+        flexDirection: "row",
+        marginTop: 15,
+        gap: 12,
+    },
+    priceBox: {
+        flex: 1,
+        backgroundColor: "#0984e3",
+        paddingVertical: 16,
+        borderRadius: 14,
+        alignItems: "center",
+    },
+    price: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#fff",
+    },
+    row: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        marginVertical: 20,
+    },
+    disabled: {
+        backgroundColor: "#ccc",
+        opacity: 0.5,
+    },
+    disabledText: {
+        color: "#888",
+    },
+});
 
 export default ClubScreen;

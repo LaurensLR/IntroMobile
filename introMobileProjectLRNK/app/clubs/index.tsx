@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 import {View, Text, TextInput, StyleSheet, Image, ScrollView, Dimensions, Pressable} from 'react-native';
 import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
 import {collection, getDocs} from "@firebase/firestore";
-import {router} from "expo-router";
+import {router, Tabs} from "expo-router";
 
 
 export interface Club {
@@ -17,8 +17,8 @@ export interface Club {
     club_image?: string;
 }
 
-const searchClub: React.FC = () => {
-    const [search, setSearch] = useState('');
+const SearchClub: React.FC = () => {
+    const [search, setSearch] = useState("");
     const [clubs, setClubs] = useState<Club[]>([]);
     const [filteredData, setFilteredData] = useState<Club[]>([]);
 
@@ -26,18 +26,21 @@ const searchClub: React.FC = () => {
         const fetchData = async () => {
             try {
                 const clubSnapshot = await getDocs(collection(FIRESTORE_DB, "clubs"));
-                const clubList: Club[] = clubSnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        name: data.name,
-                        street: data.street,
-                        number: data.number,
-                        zipcode: data.zipcode,
-                        city: data.city,
-                        club_image: data.club_image
-                    };
-                });
+                const clubList: Club[] = clubSnapshot.docs
+                    .map((doc) => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name,
+                            street: data.street,
+                            number: data.number,
+                            zipcode: data.zipcode,
+                            city: data.city,
+                            club_image: data.club_image,
+                        };
+                    })
+                    .sort((a, b) => a.name.localeCompare(b.name));
+
                 setClubs(clubList);
                 setFilteredData(clubList);
             } catch (error) {
@@ -49,7 +52,7 @@ const searchClub: React.FC = () => {
 
     const handleSearch = (text: string) => {
         setSearch(text);
-        const filtered = clubs.filter(item =>
+        const filtered = clubs.filter((item) =>
             item.name.toLowerCase().includes(text.toLowerCase())
         );
         setFilteredData(filtered);
@@ -57,27 +60,40 @@ const searchClub: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            {/* SEARCH */}
             <TextInput
                 style={styles.searchBar}
-                placeholder="Search here..."
+                placeholder=" Zoek een club..."
+                placeholderTextColor="#95a5a6"
                 value={search}
                 onChangeText={handleSearch}
             />
-            <ScrollView>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
                 {filteredData.map((club) => (
                     <Pressable
                         key={club.id}
-                        onPress={() => router.push({ pathname: "/clubs/[clubId]", params: { clubId: club.id } })}
-                        style={styles.clubCard}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/clubs/[clubId]",
+                                params: { clubId: club.id },
+                            })
+                        }
+                        style={styles.card}
                     >
                         <Image
                             source={{ uri: club.club_image }}
-                            style={styles.clubImage}
+                            style={styles.image}
                         />
-                        <View>
+
+                        <View style={styles.cardContent}>
                             <Text style={styles.clubName}>{club.name}</Text>
+
                             <Text style={styles.clubAddress}>
-                                {club.street} {club.number}, {club.zipcode} {club.city}
+                                {club.street} {club.number}
+                            </Text>
+                            <Text style={styles.clubAddress}>
+                                {club.zipcode} {club.city}
                             </Text>
                         </View>
                     </Pressable>
@@ -88,46 +104,65 @@ const searchClub: React.FC = () => {
 };
 
 const screenHeight = Dimensions.get("window").height;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
+        backgroundColor: "#f5f6fa",
+        paddingHorizontal: 16,
+        paddingTop: 10,
     },
+
+    /* SEARCH BAR */
     searchBar: {
-        height: 40,
-        marginBottom: 10,
-        borderRadius: 25,
-        backgroundColor: "#ffff",
-        paddingHorizontal: 20,
-        paddingVertical: 5, // ipv padding: 20
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: "#ffffff",
+        paddingHorizontal: 16,
+        fontSize: 15,
+        marginBottom: 15,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 2,
     },
-    clubCard: {
-        width: "100%",
-        height: screenHeight / 4,
-        borderRadius: 10,
+
+    /* CARD */
+    card: {
+        backgroundColor: "#ffffff",
+        borderRadius: 16,
+        marginBottom: 18,
         overflow: "hidden",
-        backgroundColor: "#ffff",
-        marginBottom: 20,
+
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
     },
-    clubImage: {
-        width: "100%",      // past twee per rij
-        height: 150,
-        marginBottom: 10,
+
+    image: {
+        width: "100%",
+        height: 170,
         resizeMode: "cover",
     },
-    clubInfo: {
-        padding: 10,
 
+    cardContent: {
+        padding: 14,
     },
+
     clubName: {
-        fontSize: 15,
-        fontWeight: "bold",
+        fontSize: 17,
+        fontWeight: "700",
+        color: "#2c3e50",
+        marginBottom: 6,
     },
+
     clubAddress: {
-        fontSize: 10,
-
-    }
-
+        fontSize: 13,
+        color: "#7f8c8d",
+    },
 });
 
-export default searchClub;
+export default SearchClub;

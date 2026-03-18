@@ -20,7 +20,7 @@ const Login = () => {
     try {
       const email = `${username.trim()}@lrnk.com`;
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/");
+      router.replace("/home");
     } catch (error) {
       Alert.alert("Fout", "Gebruikersnaam of wachtwoord is onjuist.");
       console.log(error);
@@ -43,7 +43,7 @@ const Login = () => {
         sport: null,
         level: null,
       });
-      router.replace("/");
+      router.replace("/home");
     } catch (error) {
       Alert.alert("Fout", "Gebruikersnaam is al in gebruik of het wachtwoord is te zwak.");
       console.log(error);
