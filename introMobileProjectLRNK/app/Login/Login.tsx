@@ -43,7 +43,7 @@ const Login = () => {
         sport: null,
         level: null,
       });
-      router.replace("/(tabs)/home");
+      router.replace("/(tabs)/users/Profile");
     } catch (error) {
       Alert.alert("Fout", "Gebruikersnaam is al in gebruik of het wachtwoord is te zwak.");
       console.log(error);

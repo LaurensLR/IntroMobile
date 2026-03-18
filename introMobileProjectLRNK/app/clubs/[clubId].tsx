@@ -1,9 +1,9 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Text, Image, ScrollView, Pressable } from "react-native";
 import { Club } from "@/app/clubs/index";
 import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
-import { doc, getDoc, collection, getDocs, Timestamp } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where, Timestamp, onSnapshot } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 type Field = {
@@ -18,6 +18,7 @@ type Booking = {
     fieldId: string;
     start: Timestamp;
     end: Timestamp;
+    status?: string;
 };
 
 const TIME_SLOTS = [
@@ -32,12 +33,30 @@ const WEEKDAYS = ["zo","ma","di","wo","do","vr","za"];
 const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 const BOOKING_DURATION = 60;
 
+const getSlotRange = (selectedDate: string, time: string, duration: number) => {
+    const [day, month] = selectedDate.split("-").map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
+    const year = new Date().getFullYear();
+
+    const start = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + duration);
+    return { start, end };
+};
+
+const overlaps = (
+    slotStart: Date,
+    slotEnd: Date,
+    bookingStart: Date,
+    bookingEnd: Date
+) => slotStart < bookingEnd && slotEnd > bookingStart;
+
 const ClubScreen = () => {
     const { clubId } = useLocalSearchParams<{ clubId: string }>();
 
     const [club, setClub] = useState<Club>();
     const [fields, setFields] = useState<Field[]>([]);
-    const [bookings, setBookings] = useState<any[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>([]);
 
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -83,45 +102,48 @@ const ClubScreen = () => {
         fetchData();
     }, [clubId]);
 
-    /*
     useEffect(() => {
-        if (!clubId || !selectedDate) return;
+        if (!clubId) return;
 
-        const fetchBookings = async () => {
-            try {
-                const ref = collection(FIRESTORE_DB, "bookings");
-                const snapshot = await getDocs(ref);
+        const ref = query(
+            collection(FIRESTORE_DB, "bookings"),
+            where("clubId", "==", clubId),
+            where("status", "==", "confirmed")
+        );
 
-                const data = snapshot.docs.map(doc => ({
-                    ...(doc.data())
-                }));
+        const unsubscribe = onSnapshot(
+            ref,
+            (snapshot) => {
+                const data = snapshot.docs
+                    .map((d) => d.data() as Booking)
+                    .filter((b) => b.start && b.end && b.fieldId);
 
                 setBookings(data);
-                console.log(data)
-
-            } catch (error) {
+            },
+            (error) => {
                 console.error("Error fetching bookings:", error);
             }
-        };
+        );
 
-        fetchBookings();
-    }, [clubId, selectedDate]); */
+        return unsubscribe;
+    }, [clubId]);
 
-    const isSlotBooked = (time: string, duration: number) => {
+    const isFieldBooked = (fieldId: string, time: string, duration: number) => {
         if (!selectedDate) return false;
 
-        const [day, month] = selectedDate.split("-").map(Number);
-        const [hours, minutes] = time.split(":").map(Number);
+        const { start, end } = getSlotRange(selectedDate, time, duration);
 
-        const start = new Date(new Date().getFullYear(), month - 1, day, hours, minutes);
-        const end = new Date(start);
-        end.setMinutes(end.getMinutes() + duration);
-
-        return bookings.some(b => {
+        return bookings.some((b) => {
+            if (b.fieldId !== fieldId) return false;
             const bStart = b.start.toDate();
             const bEnd = b.end.toDate();
-            return start < bEnd && end > bStart;
+            return overlaps(start, end, bStart, bEnd);
         });
+    };
+
+    const isTimeFullyBooked = (time: string, duration: number) => {
+        if (!selectedDate || fields.length === 0) return false;
+        return fields.every((field) => isFieldBooked(field.id, time, duration));
     };
 
     const availableTimeSlots = useMemo(() => {
@@ -213,20 +235,20 @@ const ClubScreen = () => {
                 {/* TIME */}
                 <View style={styles.row}>
                     {availableTimeSlots.map(t => {
-                        const booked = isSlotBooked(t, BOOKING_DURATION);
+                        const fullyBooked = isTimeFullyBooked(t, BOOKING_DURATION);
                         return (
                             <Pressable
                                 key={t}
-                                disabled={booked}
+                                disabled={fullyBooked}
                                 onPress={() =>
                                     setSelectedTime(prev => prev === t ? null : t)
                                 }
                                 style={[
                                     styles.box,
                                     selectedTime === t && styles.selected,
-                                    booked && styles.disabled]}
+                                    fullyBooked && styles.disabled]}
                             >
-                                <Text style={[styles.text, booked && styles.disabledText]}>
+                                <Text style={[styles.text, fullyBooked && styles.disabledText]}>
                                     {t}
                                 </Text>
                             </Pressable>
@@ -254,17 +276,23 @@ const ClubScreen = () => {
 
                             {isOpen && (
                                 <View style={styles.priceContainer}>
-                                    {[{ d: 60, p: 25 }, { d: 90, p: 35 }].map(opt => (
+                                    {[{ d: 60, p: 25 }, { d: 90, p: 35 }].map((opt) => {
+                                        const unavailable =
+                                            !isValid ||
+                                            isFieldBooked(field.id, selectedTime as string, opt.d);
+
+                                        return (
                                         <Pressable
                                             key={opt.d}
-                                            disabled={!isValid}
-                                            style={[styles.priceBox, !isValid && styles.disabled]}
+                                            disabled={unavailable}
+                                            style={[styles.priceBox, unavailable && styles.disabled]}
                                             onPress={() => handleBooking(field, opt.d, opt.p)}
                                         >
                                             <Text style={styles.price}>€{opt.p}</Text>
                                             <Text>{opt.d} min</Text>
                                         </Pressable>
-                                    ))}
+                                        );
+                                    })}
                                 </View>
                             )}
                         </View>

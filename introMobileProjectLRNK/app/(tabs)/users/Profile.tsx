@@ -180,9 +180,9 @@ const Profile = () => {
                 <Text style={styles.logoutBtnText}>Uitloggen</Text>
             </Pressable>
 
-            <Pressable onPress={seeding} style={styles.logoutBtn}>
+            {/* <Pressable onPress={seeding} style={styles.logoutBtn}>
                 <Text> Seed Firestore </Text>
-            </Pressable>
+            </Pressable> */}
         </ScrollView>
     );
 };

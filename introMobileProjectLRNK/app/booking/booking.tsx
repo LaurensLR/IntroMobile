@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet, Text, Pressable } from "react-native";
-import { Timestamp, collection, addDoc } from "firebase/firestore";
+import { View, StyleSheet, Text, Pressable, Alert } from "react-native";
+import { Timestamp, collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 import {router, useLocalSearchParams} from "expo-router";
 
@@ -30,6 +30,27 @@ const BookingScreen = () => {
 
             const endDate = new Date(startDate);
             endDate.setMinutes(endDate.getMinutes() + Number(duration));
+
+            const conflictQuery = query(
+                collection(FIRESTORE_DB, "bookings"),
+                where("clubId", "==", clubId),
+                where("fieldId", "==", fieldId),
+                where("status", "==", "confirmed")
+            );
+            const existingBookings = await getDocs(conflictQuery);
+
+            const hasConflict = existingBookings.docs.some((d) => {
+                const data = d.data();
+                const existingStart = data.start?.toDate?.();
+                const existingEnd = data.end?.toDate?.();
+                if (!existingStart || !existingEnd) return false;
+                return startDate < existingEnd && endDate > existingStart;
+            });
+
+            if (hasConflict) {
+                Alert.alert("Niet beschikbaar", "Dit veld is net geboekt in dit tijdslot. Kies een ander tijdstip.");
+                return;
+            }
 
             await addDoc(collection(FIRESTORE_DB, "bookings"), {
                 clubId,
