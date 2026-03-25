@@ -12,15 +12,17 @@ interface CustomButtonProps {
     label: string;
 }
 
-interface Club {
+export type Club = {
     id: string;
     name: string;
-    club_image?: string;
     street?: string;
     number?: string;
     zipcode?: string;
     city?: string;
-}
+    province?: string;
+    country?: string;
+    club_image?: string;
+};
 
 const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => (
     <View style={styles.buttonContainer}>
@@ -120,7 +122,7 @@ const App = () => {
                         label="Leren"
                     />
                     <CustomButton
-                        onPress={() => router.push("/(tabs)/home")}
+                        onPress={() => router.push("/match/MatchSetup")}
                         imageSource={require("../../../assets/images/gamePicto.png")}
                         label="Match"
                     />
@@ -132,7 +134,7 @@ const App = () => {
                 </View>
 
                 {/* SECTION */}
-                <Text style={styles.sectionTitle}>Jouw clubs</Text>
+                <Text style={styles.sectionTitle}>Jouw boekingen</Text>
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#0984e3" style={styles.loader} />

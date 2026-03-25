@@ -2,10 +2,10 @@ import React, {useEffect, useState} from "react";
 import {View, Text, TextInput, StyleSheet, Image, ScrollView, Dimensions, Pressable} from 'react-native';
 import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
 import {collection, getDocs} from "@firebase/firestore";
-import {router, Tabs} from "expo-router";
+import {router} from "expo-router";
 
 
-export interface Club {
+export type Club = {
     id: string;
     name: string;
     street?: string;
@@ -15,7 +15,8 @@ export interface Club {
     province?: string;
     country?: string;
     club_image?: string;
-}
+};
+
 
 const SearchClub: React.FC = () => {
     const [search, setSearch] = useState("");
@@ -102,8 +103,6 @@ const SearchClub: React.FC = () => {
         </View>
     );
 };
-
-const screenHeight = Dimensions.get("window").height;
 
 const styles = StyleSheet.create({
     container: {

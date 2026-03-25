@@ -1,12 +1,12 @@
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, Text, Image, ScrollView, Pressable } from "react-native";
-import { Club } from "@/app/clubs/index";
-import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
-import { doc, getDoc, collection, getDocs, query, where, Timestamp, onSnapshot } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import {router, useLocalSearchParams} from "expo-router";
+import React, {useEffect, useMemo, useState} from "react";
+import {Image, Pressable, ScrollView, StyleSheet, Text, View} from "react-native";
+import {Club} from "@/app/clubs/index";
+import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
+import {collection, doc, getDoc, getDocs, onSnapshot, query, Timestamp, where} from "firebase/firestore";
+import {getAuth} from "firebase/auth";
 
-type Field = {
+export type Field = {
     id: string;
     field_name: string;
     locationType: string;
@@ -14,14 +14,14 @@ type Field = {
     doubles: boolean;
 };
 
-type Booking = {
+export type Booking = {
     fieldId: string;
     start: Timestamp;
     end: Timestamp;
     status?: string;
 };
 
-const TIME_SLOTS = [
+export const TIME_SLOTS = [
     "08:00","08:30","09:00","09:30","10:00","10:30",
     "11:00","11:30","12:00","12:30","13:00","13:30",
     "14:00","14:30","15:00","15:30","16:00","16:30",
@@ -29,8 +29,8 @@ const TIME_SLOTS = [
     "20:00","20:30","21:00","21:30","22:00","22:30","23:00"
 ];
 
-const WEEKDAYS = ["zo","ma","di","wo","do","vr","za"];
-const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+export const WEEKDAYS = ["zo","ma","di","wo","do","vr","za"];
+export const MONTHS = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 const BOOKING_DURATION = 60;
 
 const getSlotRange = (selectedDate: string, time: string, duration: number) => {
@@ -111,7 +111,7 @@ const ClubScreen = () => {
             where("status", "==", "confirmed")
         );
 
-        const unsubscribe = onSnapshot(
+        return onSnapshot(
             ref,
             (snapshot) => {
                 const data = snapshot.docs
@@ -124,8 +124,6 @@ const ClubScreen = () => {
                 console.error("Error fetching bookings:", error);
             }
         );
-
-        return unsubscribe;
     }, [clubId]);
 
     const isFieldBooked = (fieldId: string, time: string, duration: number) => {

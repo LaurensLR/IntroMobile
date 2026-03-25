@@ -4,6 +4,25 @@ import { Timestamp, collection, addDoc, getDocs, query, where } from "firebase/f
 import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
 import {router, useLocalSearchParams} from "expo-router";
 
+export const formatTimeRange = (time: string, duration: number) => {
+    const [hours, minutes] = time.split(":").map(Number);
+
+    const start = new Date();
+    start.setHours(hours);
+    start.setMinutes(minutes);
+
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + duration);
+
+    const format = (d: Date) =>
+        d.toLocaleTimeString("nl-BE", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+    return `${format(start)} - ${format(end)}`;
+};
+
 const BookingScreen = () => {
     const {
         clubId,
@@ -83,25 +102,6 @@ const BookingScreen = () => {
             month: "long",
             year: "numeric"
         });
-    };
-
-    const formatTimeRange = (time: string, duration: number) => {
-        const [hours, minutes] = time.split(":").map(Number);
-
-        const start = new Date();
-        start.setHours(hours);
-        start.setMinutes(minutes);
-
-        const end = new Date(start);
-        end.setMinutes(end.getMinutes() + duration);
-
-        const format = (d: Date) =>
-            d.toLocaleTimeString("nl-BE", {
-                hour: "2-digit",
-                minute: "2-digit"
-            });
-
-        return `${format(start)} - ${format(end)}`;
     };
 
     return (
