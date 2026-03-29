@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import {View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {router, useLocalSearchParams} from "expo-router";
 import {getAuth} from "firebase/auth";
+import Header from "@/app/components/header";
 
 const RadioButton = ({ selected }: { selected: boolean }) => {
     return (
@@ -12,7 +12,7 @@ const RadioButton = ({ selected }: { selected: boolean }) => {
     );
 };
 
-const MatchOptions = () => {
+const MatchScreen2 = () => {
     const {
         clubId,
         clubName,
@@ -33,84 +33,83 @@ const MatchOptions = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
 
-            <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <Header title="" />
 
-                <Text style={styles.title}>Configureer je wedstrijd</Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+                <View style={styles.container}>
 
-                <View>
-                    <Text style={styles.sectionTitle}>Kies het soort wedstrijd</Text>
+                    <Text style={styles.title}>Configureer je wedstrijd</Text>
 
-                    <TouchableOpacity
-                        style={styles.option}
-                        onPress={() => setCompetitive(true)}
-                    >
-                        <RadioButton selected={competitive} />
-                        <View style={styles.optionText}>
-                            <Text style={styles.optionTitle}>Competitieve wedstrijd</Text>
-                            <Text style={styles.optionDesc}>
-                                Het resultaat heeft invloed op je niveau en ranking.
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View>
+                        <Text style={styles.sectionTitle}>Kies het soort wedstrijd</Text>
 
-                    {competitive && (
-                        <View style={styles.infoCard}>
-                            <Text style={styles.infoTitle}>Rang van het partijniveau</Text>
-                            <Text style={styles.infoValue}>0.25 - 1.25</Text>
-                            <Text style={styles.infoDesc}>
-                                Spelers buiten bereik kunnen aanvragen
-                            </Text>
-                        </View>
-                    )}
-
-                    <TouchableOpacity
-                        style={styles.option}
-                        onPress={() => setCompetitive(false)}
-                    >
-                        <RadioButton selected={!competitive} />
-                        <View style={styles.optionText}>
-                            <Text style={styles.optionTitle}>Vriendschappelijke wedstrijd</Text>
-                            <Text style={styles.optionDesc}>
-                                Geen invloed op ranking
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
-
-                <View>
-                    <Text style={styles.sectionTitle}>
-                        Selecteer het gender waarmee je wilt spelen
-                    </Text>
-
-                    {[
-                        { key: "all", title: "Alle spelers", desc: "Alle spelers kunnen meedoen" },
-                        { key: "mixed", title: "Gemengd", desc: "Een man en een vrouw per team" },
-                        { key: "men", title: "Alleen mannen", desc: "Alleen mannen kunnen meedoen" },
-                        { key: "women", title: "Alleen vrouwen", desc: "Alleen vrouwen kunnen meedoen" },
-                    ].map((item) => (
                         <TouchableOpacity
-                            key={item.key}
                             style={styles.option}
-                            onPress={() => setGender(item.key)}
+                            onPress={() => setCompetitive(true)}
                         >
-                            <RadioButton selected={gender === item.key} />
+                            <RadioButton selected={competitive} />
                             <View style={styles.optionText}>
-                                <Text style={styles.optionTitle}>{item.title}</Text>
-                                <Text style={styles.optionDesc}>{item.desc}</Text>
+                                <Text style={styles.optionTitle}>Competitieve wedstrijd</Text>
+                                <Text style={styles.optionDesc}>
+                                    Het resultaat heeft invloed op je niveau en ranking.
+                                </Text>
                             </View>
                         </TouchableOpacity>
-                    ))}
+
+                        {competitive && (
+                            <View style={styles.infoCard}>
+                                <Text style={styles.infoTitle}>Rang van het partijniveau</Text>
+                                <Text style={styles.infoValue}>0.25 - 1.25</Text>
+                                <Text style={styles.infoDesc}>
+                                    Spelers buiten bereik kunnen aanvragen
+                                </Text>
+                            </View>
+                        )}
+
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => setCompetitive(false)}
+                        >
+                            <RadioButton selected={!competitive} />
+                            <View style={styles.optionText}>
+                                <Text style={styles.optionTitle}>Vriendschappelijke wedstrijd</Text>
+                                <Text style={styles.optionDesc}>
+                                    Geen invloed op ranking
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View>
+                        <Text style={styles.sectionTitle}>
+                            Selecteer het gender waarmee je wilt spelen
+                        </Text>
+
+                        {[
+                            { key: "all", title: "Alle spelers", desc: "Alle spelers kunnen meedoen" },
+                            { key: "mixed", title: "Gemengd", desc: "Een man en een vrouw per team" },
+                            { key: "men", title: "Alleen mannen", desc: "Alleen mannen kunnen meedoen" },
+                            { key: "women", title: "Alleen vrouwen", desc: "Alleen vrouwen kunnen meedoen" },
+                        ].map((item) => (
+                            <TouchableOpacity
+                                key={item.key}
+                                style={styles.option}
+                                onPress={() => setGender(item.key)}
+                            >
+                                <RadioButton selected={gender === item.key} />
+                                <View style={styles.optionText}>
+                                    <Text style={styles.optionTitle}>{item.title}</Text>
+                                    <Text style={styles.optionDesc}>{item.desc}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
             </ScrollView>
 
-            {/* BUTTON */}
             <View style={styles.bottom}>
 
                 <TouchableOpacity
@@ -136,15 +135,14 @@ const MatchOptions = () => {
                     <Text style={styles.buttonText}>wedstrijd aanmaken</Text>
                 </TouchableOpacity>
             </View>
-
-        </SafeAreaView>
+        </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
         paddingHorizontal: 16,
     },
 
@@ -161,7 +159,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 26,
         fontWeight: "700",
-        marginBottom: 20,
         color: "#2c3e50",
     },
 
@@ -174,7 +171,6 @@ const styles = StyleSheet.create({
     },
 
     selector: {
-        backgroundColor: "#fff",
         padding: 14,
         borderRadius: 12,
         borderWidth: 1,
@@ -210,7 +206,6 @@ const styles = StyleSheet.create({
     },
 
     infoCard: {
-        backgroundColor: "#fff",
         padding: 16,
         borderRadius: 12,
         borderWidth: 1,
@@ -266,7 +261,6 @@ const styles = StyleSheet.create({
 
     bottom: {
         paddingVertical: 12,
-        backgroundColor: "#ffffff",
     },
 
     button: {
@@ -274,6 +268,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 25,
         alignItems: "center",
+        margin: 20
     },
 
     buttonText: {
@@ -289,7 +284,6 @@ const styles = StyleSheet.create({
         width: 60,
         height: 70,
         borderRadius: 12,
-        backgroundColor: "#fff",
         justifyContent: "center",
         alignItems: "center",
         marginRight: 10,
@@ -321,7 +315,6 @@ const styles = StyleSheet.create({
         width: "30%",
         padding: 12,
         borderRadius: 10,
-        backgroundColor: "#fff",
         margin: "1.5%",
         alignItems: "center",
         borderWidth: 1,
@@ -342,4 +335,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default MatchOptions;
+export default MatchScreen2;

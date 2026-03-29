@@ -1,19 +1,16 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-const RootLayout = () => {
+export default function RootLayout() {
     return (
-        <Stack screenOptions={{headerShown: false}}>
-
-            <Stack.Screen name="(tabs)" options={{title: "home", headerShown: false}}></Stack.Screen>
-            <Stack.Screen name="clubs/index" options={{title: "clubs", headerShown: true}}></Stack.Screen>
-            <Stack.Screen name="clubs/[clubId]" options={{title: "", headerShown: true}}></Stack.Screen>
-            <Stack.Screen name="Login/Login"/>
-            <Stack.Screen name="firebase/firebaseConfig"/>
-            <Stack.Screen name="booking/booking" options={{title: "booking", headerShown: true}}></Stack.Screen>
-            <Stack.Screen name="booking/bookingConfirmation"/>
-
-        </Stack>
-    )
-};
-
-export default RootLayout;
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="Login/Login" />
+                <Stack.Screen name="users/[userId]" />
+                <Stack.Screen name="clubs/[clubId]" />
+                <Stack.Screen name="score/index" />
+            </Stack>
+        </GestureHandlerRootView>
+    );
+}

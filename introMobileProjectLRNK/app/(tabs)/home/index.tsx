@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, {useCallback, useState} from "react";
 import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ScrollView, ActivityIndicator } from "react-native";
-import { router } from "expo-router";
-import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {router, useFocusEffect} from "expo-router";
+import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
+import {collection, getDocs, query, Timestamp, where} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+
 
 interface CustomButtonProps {
     onPress: () => void;
@@ -24,6 +24,48 @@ export type Club = {
     club_image?: string;
 };
 
+export type Booking = {
+    id: string;
+    club_name: string;
+    field_name: string;
+    price: number;
+    status: string;
+    start: Timestamp;
+    end: Timestamp;
+};
+
+export const formatDate = (timestamp: any) => {
+    const date = timestamp.toDate();
+
+    return date.toLocaleDateString("nl-BE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+};
+
+export const formatTime = (timestamp: any) => {
+    const date = timestamp.toDate();
+
+    return date.toLocaleTimeString("nl-BE", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+export const formatStatus = (status: string) => {
+    switch (status) {
+        case "confirmed":
+            return "Bevestigd";
+        case "cancelled":
+            return "Geannuleerd";
+        case "finished":
+            return "Voltooid";
+        default:
+            return status;
+    }
+};
+
 const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => (
     <View style={styles.buttonContainer}>
         <Pressable
@@ -39,61 +81,80 @@ const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => (
     </View>
 );
 
+
+
 const App = () => {
-    const [userClubs, setUserClubs] = useState<Club[]>([]);
+    const [userClubs] = useState<Club[]>([]);
     const [loading, setLoading] = useState(true);
+    const [bookings, setBookings] = useState<Booking[]>([]);
     const auth = getAuth();
     const user = auth.currentUser;
 
-    useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
+    useFocusEffect(
+        useCallback(() => {
+            if (!user) return;
 
-        const fetchUserClubs = async () => {
-            try {
-                // Get user's confirmed bookings
-                const bookingsQuery = query(
-                    collection(FIRESTORE_DB, "bookings"),
-                    where("userId", "==", user.uid),
-                    where("status", "==", "confirmed")
-                );
-                const bookingsSnapshot = await getDocs(bookingsQuery);
+            const fetchUserBookings = async () => {
+                try {
+                    setLoading(true);
 
-                // Extract unique clubIds
-                const uniqueClubIds = Array.from(
-                    new Set(bookingsSnapshot.docs.map((doc) => doc.data().clubId))
-                );
+                    const bookingsQuery = query(
+                        collection(FIRESTORE_DB, "bookings"),
+                        where("userId", "==", user.uid),
+                        where("status", "==", "confirmed"),
+                    );
 
-                // Fetch club documents
-                const clubs: Club[] = [];
-                for (const clubId of uniqueClubIds) {
-                    const clubRef = doc(FIRESTORE_DB, "clubs", clubId);
-                    const clubSnap = await getDoc(clubRef);
-                    if (clubSnap.exists()) {
-                        clubs.push({
-                            id: clubSnap.id,
-                            name: clubSnap.data().name,
-                            club_image: clubSnap.data().club_image,
-                            street: clubSnap.data().street,
-                            number: clubSnap.data().number,
-                            zipcode: clubSnap.data().zipcode,
-                            city: clubSnap.data().city,
-                        });
-                    }
+                    const snapshot = await getDocs(bookingsQuery);
+
+                    const bookings = snapshot.docs
+                        .map(doc => ({
+                            id: doc.id,
+                            ...(doc.data() as Omit<Booking, "id">)
+                        }))
+                        .sort((a, b) =>
+                            b.start.toDate().getTime() - a.start.toDate().getTime()
+                        );
+
+                    setBookings(bookings);
+
+                } catch (error) {
+                    console.error("Error fetching bookings:", error);
+                } finally {
+                    setLoading(false);
                 }
+            };
 
-                setUserClubs(clubs);
-            } catch (error) {
-                console.error("Error fetching user clubs:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            fetchUserBookings();
 
-        fetchUserClubs();
-    }, [user]);
+        }, [user])
+    );
+
+    const formatStatus = (status: string) => {
+        switch (status) {
+            case "confirmed":
+                return "Bevestigd";
+            case "cancelled":
+                return "Geannuleerd";
+            case "completed":
+                return "Voltooid";
+            default:
+                return status;
+        }
+    };
+
+    const messages = [
+        `Welkom ${user?.displayName}`,
+        "Ben je klaar voor jouw volgende wedstrijd?",
+        "Tijd om het veld te domineren!",
+        "Wie wordt de winnaar vandaag?",
+        "Vandaag is een fantastische dag om padel te spelen!",
+    ];
+
+    const [message] = useState(
+        messages[Math.floor(Math.random() * messages.length)]
+    );
+
+
     return (
         <View style={styles.screen}>
 
@@ -106,7 +167,7 @@ const App = () => {
             <ScrollView style={styles.card} showsVerticalScrollIndicator={false}>
 
                 <Text style={styles.title}>
-                    Ben je klaar voor jouw volgende wedstrijd?
+                    {message}
                 </Text>
 
                 {/* BUTTON GRID */}
@@ -117,12 +178,12 @@ const App = () => {
                         label="Boek"
                     />
                     <CustomButton
-                        onPress={() => router.push("/(tabs)/home")}
+                        onPress={() => router.push("/score")}
                         imageSource={require("../../../assets/images/learningPicto.png")}
                         label="Leren"
                     />
                     <CustomButton
-                        onPress={() => router.push("/match/MatchSetup")}
+                        onPress={() => router.push("/match/matchScreen1")}
                         imageSource={require("../../../assets/images/gamePicto.png")}
                         label="Match"
                     />
@@ -134,61 +195,114 @@ const App = () => {
                 </View>
 
                 {/* SECTION */}
-                <Text style={styles.sectionTitle}>Jouw boekingen</Text>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Boekingen</Text>
+
+                    <Pressable
+                        onPress={() => router.push("/booking/bookings")}
+                        style={({ pressed }) => [
+                            styles.seeAllBtn,
+                            pressed && { opacity: 0.6 }
+                        ]}
+                    >
+                        <Text style={styles.seeAllText}>Alle boekingen</Text>
+                    </Pressable>
+                </View>
+
+                {loading ? (
+                    <ActivityIndicator size="large" color="#0984e3" style={styles.loader} />
+                ) : bookings.length === 0 ? (
+                    <Text style={styles.emptyText}>Je hebt nog geen boekingen</Text>
+                ) : (
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                    >
+                        <View style={styles.clubsContainer}>
+                            {bookings.map((booking) => (
+                                <Pressable
+                                    key={booking.id}
+                                    style={({ pressed }) => [
+                                        styles.bookedClubCard,
+                                        pressed && { opacity: 0.8 }
+                                    ]}
+                                    onPress={() => router.push({
+                                        pathname: "/booking/[booking]",
+                                        params: { booking: booking.id }
+                                    })}
+                                >
+                                    <View style={[
+                                        styles.badge,
+                                        {backgroundColor: getStatusColor(booking.status) + "20"}]}>
+                                        <Text
+                                            style={[
+                                                styles.badgeText,
+                                                { color: getStatusColor(booking.status)}
+                                            ]}
+                                        >
+                                            {formatStatus(booking.status)}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.clubCardContent}>
+                                        <Text style={styles.bookedClubName}>
+                                            {booking.club_name}
+                                        </Text>
+
+                                        <Text style={styles.clubCardInfo}>
+                                            {booking.field_name}
+                                        </Text>
+
+                                        <Text style={styles.clubCardDate}>
+                                            {formatDate(booking.start)} {formatTime(booking.start)} - {formatTime(booking.end)}
+                                        </Text>
+                                    </View>
+                                </Pressable>
+                            ))}
+                        </View>
+                    </ScrollView>
+                )}
+
+                {/* SECTION */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Matches</Text>
+                </View>
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#0984e3" style={styles.loader} />
                 ) : userClubs.length === 0 ? (
-                    <Text style={styles.emptyText}>Je hebt nog geen boekingen</Text>
+                    <Text style={styles.emptyText}>Je hebt nog geen toekomstige matches</Text>
                 ) : (
                     <View style={styles.clubsContainer}>
-                        {userClubs.map((club) => (
-                            <Pressable
-                                key={club.id}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/clubs/[clubId]",
-                                        params: { clubId: club.id },
-                                    })
-                                }
-                                style={styles.bookedClubCard}
-                            >
-                                <Image
-                                    source={{ uri: club.club_image }}
-                                    style={styles.clubCardImage}
-                                />
 
-                                {/* Badge */}
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>Geboekt</Text>
-                                </View>
 
-                                <View style={styles.clubCardContent}>
-                                    <Text style={styles.bookedClubName}>{club.name}</Text>
-                                    <Text style={styles.clubCardAddress}>
-                                        {club.street} {club.number}
-                                    </Text>
-                                    <Text style={styles.clubCardAddress}>
-                                        {club.zipcode} {club.city}
-                                    </Text>
-                                </View>
-                            </Pressable>
-                        ))}
                     </View>
+
                 )}
+
 
             </ScrollView>
         </View>
     );
 };
 
+export const getStatusColor = (status: string) => {
+    switch (status) {
+        case "confirmed":
+            return "#27ae60";
+        case "cancelled":
+            return "#e74c3c";
+        default:
+            return "#999";
+    }
+};
+
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: "#345fff",
+        backgroundColor: "#335fff",
     },
-
-    /* HEADER */
     header: {
         paddingTop: 60,
         paddingBottom: 20,
@@ -221,64 +335,60 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: "700",
-        marginTop: 25,
-        marginBottom: 15,
         color: "#2c3e50",
     },
 
     clubsContainer: {
-        marginBottom: 30,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
     },
 
     bookedClubCard: {
+        width: 300,
         backgroundColor: "#ffffff",
         borderRadius: 16,
-        marginBottom: 16,
-        overflow: "hidden",
-        borderLeftWidth: 4,
-        borderLeftColor: "#27ae60",
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
-    },
+        marginRight: 12,
+        padding: 12,
 
-    clubCardImage: {
-        width: "100%",
-        height: 140,
-        resizeMode: "cover",
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 3,
     },
 
     badge: {
         position: "absolute",
-        top: 12,
-        right: 12,
-        backgroundColor: "#27ae60",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
+        top: 8,
+        right: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
     },
 
     badgeText: {
-        color: "#ffffff",
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: "700",
     },
 
     clubCardContent: {
-        padding: 12,
+        padding: 10,
     },
 
     bookedClubName: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "700",
-        color: "#2c3e50",
-        marginBottom: 4,
+        marginBottom: 2,
+        width: "50%",
     },
 
-    clubCardAddress: {
-        fontSize: 12,
+    clubCardInfo: {
+        fontSize: 11,
+        color: "#7f8c8d",
+    },
+    clubCardDate: {
+        paddingTop: 8,
+        fontSize: 11,
         color: "#7f8c8d",
     },
 
@@ -293,21 +403,16 @@ const styles = StyleSheet.create({
     loader: {
         marginTop: 30,
     },
-
-    /* GRID */
     grid: {
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
     },
-
-    /* BUTTON */
     buttonContainer: {
         width: "23%",
         alignItems: "center",
         marginBottom: 15,
     },
-
     circle: {
         width: 70,
         height: 70,
@@ -317,17 +422,31 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 8,
     },
-
     buttonImage: {
         width: "55%",
         height: "55%",
         resizeMode: "contain",
     },
-
     buttonText: {
         fontSize: 12,
         textAlign: "center",
         color: "#2c3e50",
+    },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: 25,
+        marginBottom: 15,
+    },
+    seeAllBtn: {
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+    },
+    seeAllText: {
+        fontSize: 13,
+        color: "#345fff",
+        fontWeight: "600",
     },
 });
 

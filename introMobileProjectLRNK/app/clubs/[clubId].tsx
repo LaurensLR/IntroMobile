@@ -2,9 +2,10 @@ import {router, useLocalSearchParams} from "expo-router";
 import React, {useEffect, useMemo, useState} from "react";
 import {Image, Pressable, ScrollView, StyleSheet, Text, View} from "react-native";
 import {Club} from "@/app/clubs/index";
-import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {collection, doc, getDoc, getDocs, onSnapshot, query, Timestamp, where} from "firebase/firestore";
 import {getAuth} from "firebase/auth";
+import Header from "@/app/components/header";
 
 export type Field = {
     id: string;
@@ -182,7 +183,7 @@ const ClubScreen = () => {
         }
 
         router.push({
-            pathname: "/booking/booking",
+            pathname: "/booking/bookingScreen",
             params: {
                 clubId,
                 club_name: club.name,
@@ -199,6 +200,7 @@ const ClubScreen = () => {
 
     return (
         <View style={styles.container}>
+            <Header title="" />
             <Image style={styles.clubImage} source={{ uri: club.club_image }} />
             <ScrollView style={styles.items}>
                 <Text style={styles.clubName}>{club.name}</Text>
@@ -334,7 +336,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 21,
-        backgroundColor: "#ecf0f1",
+        backgroundColor: "#fff",
         justifyContent: "center",
         alignItems: "center",
         marginVertical: 6,
@@ -346,7 +348,7 @@ const styles = StyleSheet.create({
     box: {
         width: 65,
         height: 45,
-        backgroundColor: "#ecf0f1",
+        backgroundColor: "#fff",
         justifyContent: "center",
         alignItems: "center",
         borderRadius: 10,

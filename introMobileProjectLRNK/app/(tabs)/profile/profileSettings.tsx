@@ -1,12 +1,10 @@
-import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 
-const User = () => {
-    const { name } = useLocalSearchParams<{name: string}>();
+const Settings = () => {
     return (
         <View style={styles.container}>
-            <Text>User : { name }</Text>
+            <Text>Home Screen</Text>
         </View>
     )
 }
@@ -19,4 +17,4 @@ const styles = StyleSheet.create({
     }
 })
 
-export default User;
+export default Settings;

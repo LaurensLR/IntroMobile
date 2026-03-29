@@ -1,5 +1,5 @@
 import { addDoc, collection } from "firebase/firestore";
-import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
+import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import clubsData from "../../assets/clubs.json";
 
  async function seedClubs() {
@@ -27,4 +27,4 @@ import clubsData from "../../assets/clubs.json";
     }
 }
 
-export const seeding = seedClubs;
+export default seedClubs;

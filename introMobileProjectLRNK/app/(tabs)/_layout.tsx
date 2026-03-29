@@ -1,25 +1,28 @@
-import { useEffect, useState } from "react";
-import {Tabs, usePathname, useSegments} from 'expo-router';
-import { FontAwesome } from "@expo/vector-icons";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
+import {useEffect, useState} from "react";
+import {Tabs, useSegments} from 'expo-router';
+import {Ionicons} from "@expo/vector-icons";
+import {onAuthStateChanged, User} from "firebase/auth";
+import {doc, getDoc} from "firebase/firestore";
+import {FIREBASE_AUTH, FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 
-const RootLayout = () => {
+const HomeLayout = () => {
     const [tabsVisible, setTabsVisible] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const pathname = usePathname();
+
     const segments = useSegments() as string[];
-    const hideTabBar = ["booking", "booking"].some((r) =>
-        segments.includes(r)
-    );
+    const currentRoute = segments[segments.length - 1];
+
+    const mainTabs = ["home", "community", "profile"];
+
+    const hideTabBar = !mainTabs.includes(currentRoute);
+
+    const hiddenTabBar = { display: "none" as const };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+        return onAuthStateChanged(FIREBASE_AUTH, (user) => {
             setCurrentUser(user);
             if (!user) setTabsVisible(false);
         });
-        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -27,6 +30,7 @@ const RootLayout = () => {
             setTabsVisible(false);
             return;
         }
+
         getDoc(doc(FIRESTORE_DB, "users", currentUser.uid)).then((snap) => {
             if (snap.exists()) {
                 const data = snap.data();
@@ -35,38 +39,50 @@ const RootLayout = () => {
                 setTabsVisible(false);
             }
         });
-    }, [currentUser, pathname]);
-
-    const hiddenTabBar = { display: "none" as const };
+    }, [currentUser]);
 
     return (
-        <Tabs screenOptions={{ tabBarStyle: tabsVisible ? undefined : hiddenTabBar}}>
+        <Tabs
+            screenOptions={{
+                tabBarStyle: (!tabsVisible || hideTabBar)
+                    ? hiddenTabBar
+                    : undefined
+            }}
+        >
             <Tabs.Screen
                 name="home/index"
                 options={{
-                    title: "home",
                     headerShown: false,
-                    tabBarIcon: ({color, size}) => <FontAwesome name="home" size={size} color={color} />
-                }}
-            />
-            <Tabs.Screen
-                name="community/community"
-                options={{
-                    title: 'Community',
+                    title: "Home",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="home-outline" size={size} color={color} />
+                    ),
                 }}
             />
 
             <Tabs.Screen
-                name="users/Profile"
+                name="community"
                 options={{
-                    title: 'Profile',
-                    headerShown: true,
-                    tabBarIcon: ({color, size}) => <FontAwesome name="address-card" size={size} color={color} />
+                    headerShown: false,
+                    title: "Community",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="people-outline" size={size} color={color} />
+                    ),
                 }}
             />
-            <Tabs.Screen name="users/[name]" options={{href: null}}/>
-            </Tabs>
+
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    headerShown: false,
+                    title: "Profiel",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="person-outline" size={size} color={color} />
+                    ),
+                }}
+            />
+        </Tabs>
     );
-}
+};
 
-export default RootLayout;
+export default HomeLayout;

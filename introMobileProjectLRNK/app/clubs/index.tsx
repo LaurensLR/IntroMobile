@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from "react";
-import {View, Text, TextInput, StyleSheet, Image, ScrollView, Dimensions, Pressable} from 'react-native';
-import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
+import {View, Text, TextInput, StyleSheet, Image, ScrollView, Pressable} from 'react-native';
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {collection, getDocs} from "@firebase/firestore";
 import {router} from "expo-router";
+import Header from "@/app/components/header";
 
 
 export type Club = {
@@ -61,6 +62,7 @@ const SearchClub: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            <Header title="Zoek een club" />
             {/* SEARCH */}
             <TextInput
                 style={styles.searchBar}

@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from "react";
 import {View, StyleSheet, Text, TouchableOpacity, ScrollView, TextInput, Pressable, Image} from "react-native";
 import {collection, getDocs} from "@firebase/firestore";
-import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {router} from "expo-router";
-import {SafeAreaView} from "react-native-safe-area-context";
 import {Club} from "@/app/clubs";
 import {Field, TIME_SLOTS} from "@/app/clubs/[clubId]";
+import Header from "@/app/components/header";
 
-const MatchSetup = () => {
+const MatchScreen1 = () => {
 
     const [search, setSearch] = useState("");
     const [clubs, setClubs] = useState<Club[]>([]);
@@ -86,15 +86,9 @@ const MatchSetup = () => {
     const NEXT_DAYS = getNextDays();
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
 
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                    <Text style={styles.closeText}>✕</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>Nieuwe wedstrijd</Text>
-            </View>
+            <Header title="Nieuw wedstrijd" />
 
             <TextInput
                 style={styles.searchBar}
@@ -125,8 +119,6 @@ const MatchSetup = () => {
                                     }
 
                                     setOpenClub(club.id);
-
-                                    // reset alles bij nieuwe club
                                     setSelectedDate(null);
                                     setSelectedTime(null);
                                     setSelectedField(null);
@@ -165,7 +157,7 @@ const MatchSetup = () => {
                                 <View style={styles.timeContainer}>
                                     <Text style={styles.sectionTitle}>Kies een datum</Text>
 
-                                    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                                    <View style={{ flexDirection: "row", flexWrap: "wrap", paddingBottom:15 }}>
                                         {NEXT_DAYS.map((date) => (
                                             <Pressable
                                                 key={date}
@@ -193,7 +185,7 @@ const MatchSetup = () => {
                                         <>
                                             <Text style={styles.sectionTitle}>Kies een tijdstip</Text>
 
-                                            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                                            <View style={{ flexDirection: "row", flexWrap: "wrap", paddingBottom:15 }}>
                                                 {getAvailableTimes(selectedDate).map((time) => (
                                                     <Pressable
                                                         key={time}
@@ -260,7 +252,7 @@ const MatchSetup = () => {
                                             style={styles.nextButton}
                                             onPress={() =>
                                                 router.push({
-                                                    pathname: "/match/matchOptions",
+                                                    pathname: "/match/matchScreen2",
                                                     params: {
                                                         clubId: club.id,
                                                         clubName: club.name,
@@ -282,14 +274,14 @@ const MatchSetup = () => {
                 })}
             </ScrollView>
 
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#ffff",
+        backgroundColor: "#f5f6fa",
     },
 
     header: {
@@ -297,7 +289,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 15,
-        backgroundColor: "#fff",
         borderBottomWidth: 1,
         borderBottomColor: "#eee",
     },
@@ -332,12 +323,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "600",
         marginHorizontal: 15,
-        marginBottom: 10,
+        marginBottom: 20,
         color: "#333",
     },
 
     clubContainer: {
-        backgroundColor: "#f3f3f3",
+        backgroundColor: "#fff",
         marginHorizontal: 15,
         marginBottom: 12,
         borderRadius: 14,
@@ -387,7 +378,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: "600",
-        marginBottom: 8,
+        marginBottom: 15,
         color: "#333",
     },
 
@@ -395,7 +386,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 10,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#f5f6fa",
         marginRight: 8,
         marginBottom: 8,
     },
@@ -417,8 +408,8 @@ const styles = StyleSheet.create({
     court: {
         padding: 12,
         borderRadius: 10,
-        backgroundColor: "#fff",
-        marginBottom: 8,
+        backgroundColor: "#f5f6fa",
+        marginBottom: 12,
     },
 
     courtSelected: {
@@ -437,7 +428,7 @@ const styles = StyleSheet.create({
 
     nextButton: {
         marginTop: 15,
-        backgroundColor: "#111",
+        backgroundColor: "#007AFF",
         paddingVertical: 14,
         borderRadius: 12,
         alignItems: "center",
@@ -450,4 +441,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default MatchSetup
+export default MatchScreen1;

@@ -1,8 +1,14 @@
 import React from "react";
-import { View, StyleSheet, Text, Pressable, Alert } from "react-native";
+import {View, StyleSheet, Text, Pressable, Alert} from "react-native";
 import { Timestamp, collection, addDoc, getDocs, query, where } from "firebase/firestore";
-import { FIRESTORE_DB } from "@/app/firebase/firebaseConfig";
+import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import {router, useLocalSearchParams} from "expo-router";
+import Header from "@/app/components/header";
+import { createNotification } from "@/app/lib/notifications";
+import {getAuth} from "firebase/auth";
+
+const auth = getAuth();
+
 
 export const formatTimeRange = (time: string, duration: number) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -33,8 +39,13 @@ const BookingScreen = () => {
         selectedTime,
         duration,
         price,
-        userId
     } = useLocalSearchParams();
+
+    if (!auth.currentUser) {
+        Alert.alert("Fout", "Je moet ingelogd zijn");
+        return;
+    }
+    const userId = auth.currentUser.uid
 
     const createBooking = async () => {
         try {
@@ -42,7 +53,6 @@ const BookingScreen = () => {
 
             const [day, month] = (selectedDate as string).split("-").map(Number);
             const year = new Date().getFullYear();
-
             const [hours, minutes] = (selectedTime as string).split(":").map(Number);
 
             const startDate = new Date(year, month - 1, day, hours, minutes, 0);
@@ -67,23 +77,34 @@ const BookingScreen = () => {
             });
 
             if (hasConflict) {
-                Alert.alert("Niet beschikbaar", "Dit veld is net geboekt in dit tijdslot. Kies een ander tijdstip.");
+                Alert.alert("Niet beschikbaar", "Kies een ander tijdstip");
                 return;
             }
 
-            await addDoc(collection(FIRESTORE_DB, "bookings"), {
+            const docRef = await addDoc(collection(FIRESTORE_DB, "bookings"), {
                 clubId,
                 club_name,
                 fieldId,
                 field_name,
                 userId,
-                start: Timestamp.fromDate(startDate), // 🔥 KEY
+                start: Timestamp.fromDate(startDate),
                 end: Timestamp.fromDate(endDate),
                 createdAt: Timestamp.now(),
                 price: Number(price),
                 status: "confirmed"
             });
-            console.log("Booking opgeslagen");
+
+            const bookingId = docRef.id;
+
+            await createNotification({
+                userId,
+                title: "Boeking bevestigd!",
+                body: `Je veld bij ${club_name} is succesvol geboekt voor ${startDate.toLocaleDateString("nl-BE")}.`,
+                data: {
+                    bookingId: bookingId
+                }
+            });
+
             router.push("/booking/bookingConfirmation");
 
         } catch (error) {
@@ -106,8 +127,7 @@ const BookingScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Jouw boeking</Text>
-
+            <Header title="Jouw boeking" />
             <View style={styles.card}>
                 <View style={styles.row}>
                     <Text style={styles.label}>Club</Text>
@@ -156,7 +176,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#f5f6fa",
-        padding: 20,
+        paddingHorizontal: 16,
+        paddingTop: 10,
+    },
+    closeBtn: {
+        position: "absolute",
+        left: 20,
+        top: 60,
+    },
+
+    closeText: {
+        fontSize: 22,
+        color: "#111",
     },
     title: {
         fontSize: 26,

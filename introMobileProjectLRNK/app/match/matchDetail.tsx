@@ -1,11 +1,13 @@
 import React from "react";
-import {View, StyleSheet, Text, Pressable, TouchableOpacity, Alert} from "react-native";
+import {View, StyleSheet, Text, Alert, Pressable} from "react-native";
 import {router} from "expo-router";
 import {addDoc, collection, Timestamp} from "firebase/firestore";
-import {FIRESTORE_DB} from "@/app/firebase/firebaseConfig";
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import { getAuth } from "firebase/auth";
 import { useLocalSearchParams } from "expo-router";
 import {MONTHS} from "@/app/clubs/[clubId]";
+import Header from "@/app/components/header";
+import {createNotification} from "@/app/lib/notifications";
 
 
 type player = {
@@ -43,7 +45,9 @@ type Match = {
 
     status: "open" | "full" | "finished",
     createdAt: Timestamp,
+    createdBy: string,
 };
+
 const MatchDetail = () => {
     const {
         clubId,
@@ -57,7 +61,12 @@ const MatchDetail = () => {
     } = useLocalSearchParams();
 
     const auth = getAuth();
+    if (!auth.currentUser) {
+        Alert.alert("Fout", "Je moet ingelogd zijn");
+        return;
+    }
     const user = auth.currentUser;
+    const userId = auth.currentUser.uid
 
     const parseToDate = (dateStr: string, timeStr: string) => {
         const [dayStr, monthStr] = dateStr.split(" ");
@@ -111,15 +120,15 @@ const MatchDetail = () => {
                     : "all",
 
             levelRange: {
-                min: 0.25,
-                max: 0.5,
+                min: 1.0,
+                max: 2.0,
             },
 
             players: [
                 {
                     id: user.uid,
                     name: user.displayName || "Speler",
-                    rank: 1,
+                    rank: 1.5,
                 },
             ],
 
@@ -128,14 +137,29 @@ const MatchDetail = () => {
                 team2: [],
             },
 
+            score: {
+                sets: [],
+            },
+
             status: "open",
             createdAt: Timestamp.now(),
+            createdBy: user.uid
         };
 
         try {
-            await addDoc(collection(FIRESTORE_DB, "matches"), matchData);
+            const docRef = await addDoc(collection(FIRESTORE_DB, "matches"), matchData);
 
-            console.log("Match opgeslagen");
+            const matchId = docRef.id;
+
+            await createNotification({
+                userId,
+                title: "Wedstrijd aangemaakt!",
+                body: "Je match staat nu online.",
+                data: {
+                    matchId: matchId
+                }
+            });
+
             router.push("/match/MatchConfirmation");
 
         } catch (error) {
@@ -146,15 +170,7 @@ const MatchDetail = () => {
     return (
         <View style={styles.screen}>
 
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                    <Text style={styles.closeText}>✕</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Wedstrijd</Text>
-            </View>
-
-            {/* CONTENT */}
+            <Header title="Nieuw wedstrijd" />
             <View style={styles.card}>
                 <Text style={styles.title}>Wedstrijd details</Text>
 
@@ -314,7 +330,7 @@ const styles = StyleSheet.create({
 
     closeText: {
         fontSize: 22,
-        color: "#2c3e50",
+        color: "#fff",
     },
 });
 
