@@ -6,7 +6,7 @@ import {collection, doc, getDoc, onSnapshot, query, updateDoc, where} from "fire
 import {router} from "expo-router";
 import {FontAwesome} from "@expo/vector-icons";
 import {SafeAreaView} from "react-native-safe-area-context";
-import {useFollows} from "@/app/hooks/useFollows";
+import {useFollows} from "@/src/hooks/useFollows";
 //import { seeding } from "@/app/firebase/seedClubs"
 
 type Sport = "tennis" | "padel";

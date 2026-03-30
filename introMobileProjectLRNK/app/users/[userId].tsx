@@ -5,9 +5,9 @@ import { doc, getDoc} from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import { getInitials} from "@/app/(tabs)/profile";
 import Header from "@/app/components/header";
-import { followUser, unfollowUser} from "@/app/lib/follows";
-import { useAuth } from "@/app/hooks/useAuth";
-import { useFollows } from "@/app/hooks/useFollows";
+import { followUser, unfollowUser} from "@/src/lib/follows";
+import { useAuth } from "@/src/hooks/useAuth";
+import { useFollows } from "@/src/hooks/useFollows";
 
 
 

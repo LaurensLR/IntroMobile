@@ -1,6 +1,6 @@
 import { doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
-import {createNotification} from "@/app/lib/notifications";
+import {createNotification} from "@/src/lib/notifications";
 
 export const followUser = async (currentUserId: string, targetUserId: string, username: string) => {
 

@@ -5,7 +5,7 @@ import Header from "@/app/components/header";
 import {getAuth} from 'firebase/auth';
 import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {useRouter} from "expo-router";
-import {deleteNotification, markNotificationAsRead} from "@/app/lib/notifications";
+import {deleteNotification, markNotificationAsRead} from "@/src/lib/notifications";
 import {formatDate, formatTime} from "@/app/(tabs)/home";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 

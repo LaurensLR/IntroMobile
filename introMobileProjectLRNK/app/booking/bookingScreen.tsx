@@ -4,7 +4,7 @@ import { Timestamp, collection, addDoc, getDocs, query, where } from "firebase/f
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import {router, useLocalSearchParams} from "expo-router";
 import Header from "@/app/components/header";
-import { createNotification } from "@/app/lib/notifications";
+import { createNotification } from "@/src/lib/notifications";
 import {getAuth} from "firebase/auth";
 
 const auth = getAuth();
@@ -41,6 +41,18 @@ const BookingScreen = () => {
         price,
     } = useLocalSearchParams();
 
+    const asString = (value: string | string[] | undefined) =>
+        Array.isArray(value) ? value[0] : value;
+
+    const clubIdValue = asString(clubId);
+    const clubNameValue = asString(club_name);
+    const fieldIdValue = asString(fieldId);
+    const fieldNameValue = asString(field_name);
+    const selectedDateValue = asString(selectedDate);
+    const selectedTimeValue = asString(selectedTime);
+    const durationValue = Number(asString(duration));
+    const priceValue = Number(asString(price));
+
     if (!auth.currentUser) {
         Alert.alert("Fout", "Je moet ingelogd zijn");
         return;
@@ -49,24 +61,37 @@ const BookingScreen = () => {
 
     const createBooking = async () => {
         try {
-            if (!selectedDate || !selectedTime) return;
+            if (!selectedDateValue || !selectedTimeValue || !clubIdValue || !fieldIdValue || Number.isNaN(durationValue)) {
+                Alert.alert("Fout", "Ongeldige boekingsgegevens");
+                return;
+            }
 
-            const [day, month] = (selectedDate as string).split("-").map(Number);
+            const [day, month] = selectedDateValue.split("-").map(Number);
             const year = new Date().getFullYear();
-            const [hours, minutes] = (selectedTime as string).split(":").map(Number);
+            const [hours, minutes] = selectedTimeValue.split(":").map(Number);
 
             const startDate = new Date(year, month - 1, day, hours, minutes, 0);
 
             const endDate = new Date(startDate);
-            endDate.setMinutes(endDate.getMinutes() + Number(duration));
+            endDate.setMinutes(endDate.getMinutes() + durationValue);
 
-            const conflictQuery = query(
+            const bookingConflictQuery = query(
                 collection(FIRESTORE_DB, "bookings"),
-                where("clubId", "==", clubId),
-                where("fieldId", "==", fieldId),
+                where("clubId", "==", clubIdValue),
+                where("fieldId", "==", fieldIdValue),
                 where("status", "==", "confirmed")
             );
-            const existingBookings = await getDocs(conflictQuery);
+
+            const matchConflictQuery = query(
+                collection(FIRESTORE_DB, "matches"),
+                where("clubId", "==", clubIdValue),
+                where("fieldId", "==", fieldIdValue)
+            );
+
+            const [existingBookings, existingMatches] = await Promise.all([
+                getDocs(bookingConflictQuery),
+                getDocs(matchConflictQuery),
+            ]);
 
             const hasConflict = existingBookings.docs.some((d) => {
                 const data = d.data();
@@ -76,21 +101,30 @@ const BookingScreen = () => {
                 return startDate < existingEnd && endDate > existingStart;
             });
 
-            if (hasConflict) {
+            const hasMatchConflict = existingMatches.docs.some((d) => {
+                const data = d.data();
+                if (data.status === "finished") return false;
+                const existingStart = data.start?.toDate?.();
+                const existingEnd = data.end?.toDate?.();
+                if (!existingStart || !existingEnd) return false;
+                return startDate < existingEnd && endDate > existingStart;
+            });
+
+            if (hasConflict || hasMatchConflict) {
                 Alert.alert("Niet beschikbaar", "Kies een ander tijdstip");
                 return;
             }
 
             const docRef = await addDoc(collection(FIRESTORE_DB, "bookings"), {
-                clubId,
-                club_name,
-                fieldId,
-                field_name,
+                clubId: clubIdValue,
+                club_name: clubNameValue,
+                fieldId: fieldIdValue,
+                field_name: fieldNameValue,
                 userId,
                 start: Timestamp.fromDate(startDate),
                 end: Timestamp.fromDate(endDate),
                 createdAt: Timestamp.now(),
-                price: Number(price),
+                price: priceValue,
                 status: "confirmed"
             });
 
@@ -99,7 +133,7 @@ const BookingScreen = () => {
             await createNotification({
                 userId,
                 title: "Boeking bevestigd!",
-                body: `Je veld bij ${club_name} is succesvol geboekt voor ${startDate.toLocaleDateString("nl-BE")}.`,
+                body: `Je veld bij ${clubNameValue} is succesvol geboekt voor ${startDate.toLocaleDateString("nl-BE")}.`,
                 data: {
                     bookingId: bookingId
                 }
@@ -131,12 +165,12 @@ const BookingScreen = () => {
             <View style={styles.card}>
                 <View style={styles.row}>
                     <Text style={styles.label}>Club</Text>
-                    <Text style={styles.value}>{club_name}</Text>
+                    <Text style={styles.value}>{clubNameValue}</Text>
                 </View>
 
                 <View style={styles.row}>
                     <Text style={styles.label}>Veld</Text>
-                    <Text style={styles.value}>{field_name}</Text>
+                    <Text style={styles.value}>{fieldNameValue}</Text>
                 </View>
 
                 <View style={styles.row}>
@@ -157,7 +191,7 @@ const BookingScreen = () => {
 
                 <View style={styles.row}>
                     <Text style={styles.priceLabel}>Prijs</Text>
-                    <Text style={styles.price}>€ {price}</Text>
+                    <Text style={styles.price}>€ {priceValue}</Text>
                 </View>
 
                 <Text style={styles.info}>

@@ -1,11 +1,19 @@
 import React, {useEffect, useState} from "react";
 import {View, StyleSheet, Text, TouchableOpacity, ScrollView, TextInput, Pressable, Image} from "react-native";
-import {collection, getDocs} from "@firebase/firestore";
+import {collection, getDocs, query, where} from "@firebase/firestore";
 import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {router} from "expo-router";
 import {Club} from "@/app/clubs";
 import {Field, TIME_SLOTS} from "@/app/clubs/[clubId]";
 import Header from "@/app/components/header";
+
+const MATCH_DURATION = 90;
+
+type ReservedSlot = {
+    fieldId: string;
+    start: Date;
+    end: Date;
+};
 
 const MatchScreen1 = () => {
 
@@ -17,6 +25,7 @@ const MatchScreen1 = () => {
     const [fields, setFields] = useState<any[]>([]);
     const [selectedField, setSelectedField] = useState<Field| null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [reservedSlots, setReservedSlots] = useState<ReservedSlot[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -44,42 +53,59 @@ const MatchScreen1 = () => {
     };
 
     const getNextDays = () => {
-        const days = [];
+        const days: { key: string; label: string }[] = [];
         const today = new Date();
 
         for (let i = 1; i <= 4; i++) {
             const d = new Date();
             d.setDate(today.getDate() + i);
 
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+
             const formatted = d.toLocaleDateString("nl-BE", {
                 day: "numeric",
                 month: "short",
             });
 
-            days.push(formatted);
+            days.push({
+                key: `${year}-${month}-${day}`,
+                label: formatted,
+            });
         }
 
         return days;
     };
 
-    const getAvailableTimes = (date: string) => {
+    const getSlotRange = (dateKey: string, time: string) => {
+        const [year, month, day] = dateKey.split("-").map(Number);
+        const [hours, minutes] = time.split(":").map(Number);
+
+        const start = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        const end = new Date(start);
+        end.setMinutes(end.getMinutes() + MATCH_DURATION);
+
+        return { start, end };
+    };
+
+    const hasConflict = (fieldId: string, dateKey: string, time: string) => {
+        const { start, end } = getSlotRange(dateKey, time);
+        return reservedSlots.some((slot) => (
+            slot.fieldId === fieldId && start < slot.end && end > slot.start
+        ));
+    };
+
+    const getAvailableTimes = (dateKey: string) => {
         const now = new Date();
         const minDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
         return TIME_SLOTS.filter((time) => {
-            const [hours, minutes] = time.split(":").map(Number);
+            const { start } = getSlotRange(dateKey, time);
+            if (start < minDate) return false;
 
-            // maak datetime van geselecteerde datum + tijd
-            const d = new Date();
-            const [day] = date.split(" ");
-
-            d.setDate(parseInt(day));
-            d.setMonth(new Date().getMonth()); // huidige maand
-            d.setHours(hours);
-            d.setMinutes(minutes);
-            d.setSeconds(0);
-
-            return d >= minDate;
+            if (fields.length === 0) return true;
+            return fields.some((field) => !hasConflict(field.id, dateKey, time));
         });
     };
 
@@ -115,6 +141,7 @@ const MatchScreen1 = () => {
                                         setSelectedDate(null);
                                         setSelectedTime(null);
                                         setSelectedField(null);
+                                        setReservedSlots([]);
                                         return;
                                     }
 
@@ -135,7 +162,44 @@ const MatchScreen1 = () => {
                                         }))
                                         .sort((a, b) => a.field_name.localeCompare(b.field_name));
 
+                                    const bookingsQuery = query(
+                                        collection(FIRESTORE_DB, "bookings"),
+                                        where("clubId", "==", club.id),
+                                        where("status", "==", "confirmed"),
+                                    );
+
+                                    const matchesQuery = query(
+                                        collection(FIRESTORE_DB, "matches"),
+                                        where("clubId", "==", club.id),
+                                    );
+
+                                    const [bookingsSnapshot, matchesSnapshot] = await Promise.all([
+                                        getDocs(bookingsQuery),
+                                        getDocs(matchesQuery),
+                                    ]);
+
+                                    const bookingSlots: ReservedSlot[] = bookingsSnapshot.docs
+                                        .map((doc) => doc.data())
+                                        .filter((data) => data.fieldId && data.start?.toDate && data.end?.toDate)
+                                        .map((data) => ({
+                                            fieldId: data.fieldId,
+                                            start: data.start.toDate(),
+                                            end: data.end.toDate(),
+                                        }));
+
+                                    const matchSlots: ReservedSlot[] = matchesSnapshot.docs
+                                        .map((doc) => doc.data())
+                                        .filter((data) => (
+                                            data.fieldId && data.start?.toDate && data.end?.toDate && data.status !== "finished"
+                                        ))
+                                        .map((data) => ({
+                                            fieldId: data.fieldId,
+                                            start: data.start.toDate(),
+                                            end: data.end.toDate(),
+                                        }));
+
                                     setFields(fieldList);
+                                    setReservedSlots([...bookingSlots, ...matchSlots]);
                                 }}
                             >
                                 <View style={styles.clubLeft}>
@@ -158,25 +222,26 @@ const MatchScreen1 = () => {
                                     <Text style={styles.sectionTitle}>Kies een datum</Text>
 
                                     <View style={{ flexDirection: "row", flexWrap: "wrap", paddingBottom:15 }}>
-                                        {NEXT_DAYS.map((date) => (
+                                        {NEXT_DAYS.map((dateOption) => (
                                             <Pressable
-                                                key={date}
+                                                key={dateOption.key}
                                                 style={[
                                                     styles.timeSlot,
-                                                    selectedDate === date && styles.timeSlotSelected
+                                                    selectedDate === dateOption.key && styles.timeSlotSelected
                                                 ]}
                                                 onPress={() => {
-                                                    setSelectedDate(date);
+                                                    setSelectedDate(dateOption.key);
                                                     setSelectedTime(null); // reset time bij nieuwe datum
+                                                    setSelectedField(null);
                                                 }}
                                             >
                                                 <Text
                                                     style={[
                                                         styles.timeText,
-                                                        selectedDate === date && styles.timeTextSelected
+                                                        selectedDate === dateOption.key && styles.timeTextSelected
                                                     ]}
                                                 >
-                                                    {date}
+                                                    {dateOption.label}
                                                 </Text>
                                             </Pressable>
                                         ))}
@@ -221,12 +286,17 @@ const MatchScreen1 = () => {
                                             {fields.length === 0 ? (
                                                 <Text>Geen velden beschikbaar</Text>
                                             ) : (
-                                                fields.map((field) => (
+                                                fields.map((field) => {
+                                                    const unavailable = !selectedDate || !selectedTime || hasConflict(field.id, selectedDate, selectedTime);
+
+                                                    return (
                                                     <Pressable
                                                         key={field.id}
+                                                        disabled={unavailable}
                                                         style={[
                                                             styles.court,
-                                                            selectedField?.id === field.id && styles.courtSelected
+                                                            selectedField?.id === field.id && styles.courtSelected,
+                                                            unavailable && styles.courtDisabled,
                                                         ]}
                                                         onPress={() =>
                                                             setSelectedField(prev => prev?.id === field.id ? null : field)
@@ -235,13 +305,15 @@ const MatchScreen1 = () => {
                                                         <Text
                                                             style={[
                                                                 styles.courtText,
-                                                                selectedField?.id === field.id && styles.courtTextSelected
+                                                                selectedField?.id === field.id && styles.courtTextSelected,
+                                                                unavailable && styles.courtTextDisabled,
                                                             ]}
                                                         >
-                                                            {field.field_name}
+                                                            {unavailable ? `${field.field_name} (niet beschikbaar)` : field.field_name}
                                                         </Text>
                                                     </Pressable>
-                                                ))
+                                                    )
+                                                })
                                             )}
                                         </>
                                     )}
@@ -416,9 +488,17 @@ const styles = StyleSheet.create({
         backgroundColor: "#007AFF",
     },
 
+    courtDisabled: {
+        opacity: 0.45,
+    },
+
     courtText: {
         fontSize: 14,
         color: "#333",
+    },
+
+    courtTextDisabled: {
+        color: "#6b7280",
     },
 
     courtTextSelected: {

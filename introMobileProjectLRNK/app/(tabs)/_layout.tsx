@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {Redirect} from "expo-router";
 import {Tabs, useSegments} from 'expo-router';
 import {Ionicons} from "@expo/vector-icons";
 import {onAuthStateChanged, User} from "firebase/auth";
@@ -8,6 +9,7 @@ import {FIREBASE_AUTH, FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 const HomeLayout = () => {
     const [tabsVisible, setTabsVisible] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [authChecked, setAuthChecked] = useState(false);
 
     const segments = useSegments() as string[];
     const currentRoute = segments[segments.length - 1];
@@ -21,6 +23,7 @@ const HomeLayout = () => {
     useEffect(() => {
         return onAuthStateChanged(FIREBASE_AUTH, (user) => {
             setCurrentUser(user);
+            setAuthChecked(true);
             if (!user) setTabsVisible(false);
         });
     }, []);
@@ -40,6 +43,9 @@ const HomeLayout = () => {
             }
         });
     }, [currentUser]);
+
+    if (!authChecked) return null;
+    if (!currentUser) return <Redirect href="/Login/Login" />;
 
     return (
         <Tabs

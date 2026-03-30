@@ -5,7 +5,7 @@ import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import {formatDate, formatTime, formatStatus} from "@/app/(tabs)/home";
 import Header from "@/app/components/header";
-import {createNotification} from "@/app/lib/notifications";
+import {createNotification} from "@/src/lib/notifications";
 import {getAuth} from "firebase/auth";
 
 const auth = getAuth();

@@ -34,6 +34,15 @@ export type Booking = {
     end: Timestamp;
 };
 
+export type Match = {
+    id: string;
+    clubName: string;
+    fieldName: string;
+    start: Timestamp;
+    end: Timestamp;
+    status: string;
+};
+
 export const formatDate = (timestamp: any) => {
     const date = timestamp.toDate();
 
@@ -85,6 +94,7 @@ const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => (
 
 const App = () => {
     const [userClubs] = useState<Club[]>([]);
+    const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState<Booking[]>([]);
     const auth = getAuth();
@@ -92,7 +102,12 @@ const App = () => {
 
     useFocusEffect(
         useCallback(() => {
-            if (!user) return;
+            if (!user) {
+                setBookings([]);
+                setMatches([]);
+                setLoading(false);
+                return;
+            }
 
             const fetchUserBookings = async () => {
                 try {
@@ -116,6 +131,23 @@ const App = () => {
                         );
 
                     setBookings(bookings);
+
+                    const matchesQuery = query(
+                        collection(FIRESTORE_DB, "matches"),
+                        where("createdBy", "==", user.uid),
+                    );
+
+                    const matchesSnapshot = await getDocs(matchesQuery);
+
+                    const upcomingMatches = matchesSnapshot.docs
+                        .map((doc) => ({
+                            id: doc.id,
+                            ...(doc.data() as Omit<Match, "id">),
+                        }))
+                        .filter((match) => match.end.toDate().getTime() >= Date.now())
+                        .sort((a, b) => a.start.toDate().getTime() - b.start.toDate().getTime());
+
+                    setMatches(upcomingMatches);
 
                 } catch (error) {
                     console.error("Error fetching bookings:", error);
@@ -271,13 +303,44 @@ const App = () => {
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#0984e3" style={styles.loader} />
-                ) : userClubs.length === 0 ? (
+                ) : matches.length === 0 ? (
                     <Text style={styles.emptyText}>Je hebt nog geen toekomstige matches</Text>
                 ) : (
-                    <View style={styles.clubsContainer}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                    >
+                        <View style={styles.clubsContainer}>
+                            {matches.map((match) => (
+                                <View key={match.id} style={styles.bookedClubCard}>
+                                    <View style={[
+                                        styles.badge,
+                                        { backgroundColor: getStatusColor(match.status) + "20" }
+                                    ]}>
+                                        <Text style={[
+                                            styles.badgeText,
+                                            { color: getStatusColor(match.status) }
+                                        ]}>
+                                            {formatStatus(match.status)}
+                                        </Text>
+                                    </View>
 
-
-                    </View>
+                                    <View style={styles.clubCardContent}>
+                                        <Text style={styles.bookedClubName}>
+                                            {match.clubName}
+                                        </Text>
+                                        <Text style={styles.clubCardInfo}>
+                                            {match.fieldName}
+                                        </Text>
+                                        <Text style={styles.clubCardDate}>
+                                            {formatDate(match.start)} {formatTime(match.start)} - {formatTime(match.end)}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    </ScrollView>
 
                 )}
 

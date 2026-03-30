@@ -1,13 +1,13 @@
 import React from "react";
 import {View, StyleSheet, Text, Alert, Pressable} from "react-native";
 import {router} from "expo-router";
-import {addDoc, collection, Timestamp} from "firebase/firestore";
+import {addDoc, collection, getDocs, query, Timestamp, where} from "firebase/firestore";
 import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import { getAuth } from "firebase/auth";
 import { useLocalSearchParams } from "expo-router";
 import {MONTHS} from "@/app/clubs/[clubId]";
 import Header from "@/app/components/header";
-import {createNotification} from "@/app/lib/notifications";
+import {createNotification} from "@/src/lib/notifications";
 
 
 type player = {
@@ -60,6 +60,18 @@ const MatchDetail = () => {
         gender,
     } = useLocalSearchParams();
 
+    const asString = (value: string | string[] | undefined) =>
+        Array.isArray(value) ? value[0] : value;
+
+    const clubIdValue = asString(clubId);
+    const clubNameValue = asString(clubName);
+    const fieldIdValue = asString(fieldId);
+    const fieldNameValue = asString(fieldName);
+    const dateValue = asString(date);
+    const timeValue = asString(time);
+    const matchTypeValue = asString(matchType);
+    const genderValue = asString(gender);
+
     const auth = getAuth();
     if (!auth.currentUser) {
         Alert.alert("Fout", "Je moet ingelogd zijn");
@@ -69,11 +81,17 @@ const MatchDetail = () => {
     const userId = auth.currentUser.uid
 
     const parseToDate = (dateStr: string, timeStr: string) => {
-        const [dayStr, monthStr] = dateStr.split(" ");
         const [hours, minutes] = timeStr.split(":").map(Number);
 
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [year, month, day] = dateStr.split("-").map(Number);
+            return new Date(year, month - 1, day, hours, minutes, 0);
+        }
+
+        const [dayStr, monthStr] = dateStr.split(" ");
+
         const day = Number(dayStr);
-        const monthIndex = MONTHS.indexOf(monthStr.toLowerCase());
+        const monthIndex = MONTHS.indexOf(monthStr.toLowerCase().replace(".", ""));
         const year = new Date().getFullYear();
 
         if (day <= 0 || monthIndex === -1) return null;
@@ -81,7 +99,15 @@ const MatchDetail = () => {
         return new Date(year, monthIndex, day, hours, minutes, 0);
     };
 
-    const startDate = parseToDate(date as string, time as string);
+    if (!clubIdValue || !fieldIdValue || !clubNameValue || !fieldNameValue || !dateValue || !timeValue) {
+        return (
+            <View style={styles.screen}>
+                <Text>Ongeldige matchgegevens</Text>
+            </View>
+        );
+    }
+
+    const startDate = parseToDate(dateValue, timeValue);
 
     if (!startDate) {
         return (
@@ -100,23 +126,63 @@ const MatchDetail = () => {
             return;
         }
 
+        const bookingsQuery = query(
+            collection(FIRESTORE_DB, "bookings"),
+            where("clubId", "==", clubIdValue),
+            where("fieldId", "==", fieldIdValue),
+            where("status", "==", "confirmed"),
+        );
+
+        const matchesQuery = query(
+            collection(FIRESTORE_DB, "matches"),
+            where("clubId", "==", clubIdValue),
+            where("fieldId", "==", fieldIdValue),
+        );
+
+        const [bookingsSnapshot, matchesSnapshot] = await Promise.all([
+            getDocs(bookingsQuery),
+            getDocs(matchesQuery),
+        ]);
+
+        const hasBookingConflict = bookingsSnapshot.docs.some((doc) => {
+            const data = doc.data();
+            const existingStart = data.start?.toDate?.();
+            const existingEnd = data.end?.toDate?.();
+            if (!existingStart || !existingEnd) return false;
+            return startDate < existingEnd && endDate > existingStart;
+        });
+
+        const hasMatchConflict = matchesSnapshot.docs.some((doc) => {
+            const data = doc.data();
+            if (data.status === "finished") return false;
+            const existingStart = data.start?.toDate?.();
+            const existingEnd = data.end?.toDate?.();
+            if (!existingStart || !existingEnd) return false;
+            return startDate < existingEnd && endDate > existingStart;
+        });
+
+        if (hasBookingConflict || hasMatchConflict) {
+            Alert.alert("Niet beschikbaar", "Dit veld en tijdstip is al gereserveerd. Kies een ander tijdstip.");
+            return;
+        }
+
         const matchData: Match = {
-            clubId: clubId as string,
-            clubName: clubName as string,
-            fieldId: fieldId as string,
-            fieldName: fieldName as string,
+            clubId: clubIdValue,
+            clubName: clubNameValue,
+            fieldId: fieldIdValue,
+            fieldName: fieldNameValue,
 
             start: Timestamp.fromDate(startDate),
             end: Timestamp.fromDate(endDate),
 
             matchType:
-                matchType === "competitive" ? "competitive" : "friendly",
+                matchTypeValue === "competitive" ? "competitive" : "friendly",
 
             gender:
-                gender === "men" ||
-                gender === "women" ||
-                gender === "mixed"
-                    ? gender
+                genderValue === "men" ||
+                genderValue === "women" ||
+                genderValue === "mixed"
+                    ? genderValue
                     : "all",
 
             levelRange: {
@@ -176,12 +242,12 @@ const MatchDetail = () => {
 
                 <View style={styles.row}>
                     <Text style={styles.label}>Club</Text>
-                    <Text style={styles.value}>{clubName}</Text>
+                    <Text style={styles.value}>{clubNameValue}</Text>
                 </View>
 
                 <View style={styles.row}>
                     <Text style={styles.label}>Veld</Text>
-                    <Text style={styles.value}>{fieldName}</Text>
+                    <Text style={styles.value}>{fieldNameValue}</Text>
                 </View>
 
                 <View style={styles.row}>
@@ -207,12 +273,12 @@ const MatchDetail = () => {
 
                 <View style={styles.row}>
                     <Text style={styles.label}>Type</Text>
-                    <Text style={styles.value}>{matchType}</Text>
+                    <Text style={styles.value}>{matchTypeValue}</Text>
                 </View>
 
                 <View style={styles.row}>
                     <Text style={styles.label}>Gender</Text>
-                    <Text style={styles.value}>{gender}</Text>
+                    <Text style={styles.value}>{genderValue}</Text>
                 </View>
 
                 <View style={styles.divider} />
