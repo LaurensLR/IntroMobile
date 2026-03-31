@@ -220,7 +220,7 @@ const App = () => {
                         label="Match"
                     />
                     <CustomButton
-                        onPress={() => router.push("/(tabs)/home")}
+                        onPress={() => router.push("/(tabs)/home/searchMatches" as any)}
                         imageSource={require("../../../assets/images/matchPicto.png")}
                         label="Zoek"
                     />
@@ -313,7 +313,19 @@ const App = () => {
                     >
                         <View style={styles.clubsContainer}>
                             {matches.map((match) => (
-                                <View key={match.id} style={styles.bookedClubCard}>
+                                <Pressable
+                                    key={match.id}
+                                    style={({ pressed }) => [
+                                        styles.bookedClubCard,
+                                        pressed && { opacity: 0.8 }
+                                    ]}
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: "/match/[matchId]",
+                                            params: { matchId: match.id }
+                                        } as any)
+                                    }
+                                >
                                     <View style={[
                                         styles.badge,
                                         { backgroundColor: getStatusColor(match.status) + "20" }
@@ -337,7 +349,7 @@ const App = () => {
                                             {formatDate(match.start)} {formatTime(match.start)} - {formatTime(match.end)}
                                         </Text>
                                     </View>
-                                </View>
+                                </Pressable>
                             ))}
                         </View>
                     </ScrollView>

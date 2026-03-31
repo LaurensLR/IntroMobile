@@ -14,7 +14,7 @@ const HomeLayout = () => {
     const segments = useSegments() as string[];
     const currentRoute = segments[segments.length - 1];
 
-    const mainTabs = ["home", "community", "profile"];
+    const mainTabs = ["home", "community", "profile", "searchMatches"];
 
     const hideTabBar = !mainTabs.includes(currentRoute);
 
@@ -85,6 +85,14 @@ const HomeLayout = () => {
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="person-outline" size={size} color={color} />
                     ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="home/searchMatches"
+                options={{
+                    href: null,
+                    headerShown: false,
                 }}
             />
         </Tabs>

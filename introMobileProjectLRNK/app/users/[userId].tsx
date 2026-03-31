@@ -20,6 +20,7 @@ const User = () => {
     const [profileUser, setProfileUser] = useState<any>(null);
     const [isFollowing, setIsFollowing] = useState(false);
     const { followersCount, followingCount } = useFollows(userId);
+    const isOwnProfile = !!currentUser?.uid && currentUser.uid === userId;
 
     const handleMessage = () => {
         router.push({
@@ -30,6 +31,7 @@ const User = () => {
 
     const handleFollow = async () => {
         if (!currentUser?.uid || !userId || !profileUser) return;
+        if (currentUser.uid === userId) return;
 
         if (isFollowing) {
             await unfollowUser(currentUser.uid, userId);
@@ -139,18 +141,19 @@ const User = () => {
                 </View>
 
                 <View style={styles.buttons}>
-
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.followBtn,
-                            pressed && { opacity: 0.7 }
-                        ]}
-                        onPress={handleFollow}
-                    >
-                        <Text style={{ color: "white" }}>
-                            {isFollowing ? "Volgend" : "Volgen"}
-                        </Text>
-                    </Pressable>
+                    {!isOwnProfile && (
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.followBtn,
+                                pressed && { opacity: 0.7 }
+                            ]}
+                            onPress={handleFollow}
+                        >
+                            <Text style={{ color: "white" }}>
+                                {isFollowing ? "Volgend" : "Volgen"}
+                            </Text>
+                        </Pressable>
+                    )}
 
                     <Pressable
                         style={({ pressed }) => [

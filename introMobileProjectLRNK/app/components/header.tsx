@@ -5,14 +5,15 @@ import { router } from "expo-router";
 type Props = {
     title: string;
     showBack?: boolean;
+    onBackPress?: () => void;
 };
 
-export default function Header({ title, showBack = true }: Props) {
+export default function Header({ title, showBack = true, onBackPress }: Props) {
     return (
         <View style={styles.header}>
 
             {showBack ? (
-                <Pressable onPress={() => router.back()} style={styles.side}>
+                <Pressable onPress={() => (onBackPress ? onBackPress() : router.back())} style={styles.side}>
                     <Ionicons name="chevron-back" size={24} color="#0f2a3d" />
                 </Pressable>
             ) : (

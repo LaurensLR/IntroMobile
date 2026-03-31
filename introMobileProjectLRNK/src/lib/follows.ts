@@ -3,6 +3,9 @@ import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import {createNotification} from "@/src/lib/notifications";
 
 export const followUser = async (currentUserId: string, targetUserId: string, username: string) => {
+    if (currentUserId === targetUserId) {
+        return;
+    }
 
     console.log({ targetUserId: targetUserId });
     console.log({currentUserId: currentUserId});
