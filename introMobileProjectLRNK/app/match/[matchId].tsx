@@ -430,7 +430,10 @@ const MatchView = () => {
                     </View>
                 </View>
 
-                <Pressable style={styles.chatBtn}>
+                <Pressable
+                    style={styles.chatBtn}
+                    onPress={() => router.push(`/chats/${matchId}`)}
+                >
                     <Ionicons name="chatbubble-outline" size={20} color="#fff" />
                     <Text style={styles.chatBtnText}>Chat</Text>
                 </Pressable>
