@@ -139,6 +139,7 @@ const TeamPlayer = ({
 const MatchView = () => {
     const params = useLocalSearchParams();
     const matchId = asString(params.matchId);
+    const from = asString(params.from);
 
     const [loading, setLoading] = useState(true);
     const [match, setMatch] = useState<MatchItem | null>(null);
@@ -147,8 +148,13 @@ const MatchView = () => {
     const auth = getAuth();
     const currentUser = auth.currentUser;
 
-    const goToSearchMatches = () => {
-        router.navigate("/(tabs)/home/searchMatches" as any);
+    const goBack = () => {
+        if (from === "payment" || !router.canGoBack()) {
+            router.replace("/(tabs)/home");
+            return;
+        }
+
+        router.back();
     };
 
     useEffect(() => {
@@ -209,7 +215,7 @@ const MatchView = () => {
         return (
             <View style={styles.screen}>
                 <View style={styles.emptyHeaderRow}>
-                    <Pressable style={styles.backButton} onPress={goToSearchMatches}>
+                    <Pressable style={styles.backButton} onPress={goBack}>
                         <Ionicons name="chevron-back" size={24} color="#0f2a3d" />
                     </Pressable>
                 </View>
@@ -314,7 +320,7 @@ const MatchView = () => {
                     <View style={styles.heroOverlay} />
 
                     <View style={styles.heroActionsRow}>
-                        <Pressable style={styles.backButtonFloating} onPress={goToSearchMatches}>
+                        <Pressable style={styles.backButtonFloating} onPress={goBack}>
                             <Ionicons name="chevron-back" size={24} color="#0f2a3d" />
                         </Pressable>
                     </View>

@@ -2,7 +2,7 @@ import React, {useCallback, useState} from "react";
 import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ScrollView, ActivityIndicator } from "react-native";
 import {router, useFocusEffect} from "expo-router";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
-import {collection, getDocs, query, Timestamp, where} from "firebase/firestore";
+import {collection, doc, getDocs, query, Timestamp, where, writeBatch} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 
@@ -41,6 +41,10 @@ export type Match = {
     start: Timestamp;
     end: Timestamp;
     status: string;
+    teams?: {
+        team1?: string[];
+        team2?: string[];
+    };
 };
 
 export const formatDate = (timestamp: any) => {
@@ -137,14 +141,66 @@ const App = () => {
                         where("createdBy", "==", user.uid),
                     );
 
-                    const matchesSnapshot = await getDocs(matchesQuery);
+                    const team1MatchesQuery = query(
+                        collection(FIRESTORE_DB, "matches"),
+                        where("teams.team1", "array-contains", user.uid),
+                    );
 
-                    const upcomingMatches = matchesSnapshot.docs
-                        .map((doc) => ({
-                            id: doc.id,
-                            ...(doc.data() as Omit<Match, "id">),
-                        }))
-                        .filter((match) => match.end.toDate().getTime() >= Date.now())
+                    const team2MatchesQuery = query(
+                        collection(FIRESTORE_DB, "matches"),
+                        where("teams.team2", "array-contains", user.uid),
+                    );
+
+                    const [matchesSnapshot, team1MatchesSnapshot, team2MatchesSnapshot] = await Promise.all([
+                        getDocs(matchesQuery),
+                        getDocs(team1MatchesQuery),
+                        getDocs(team2MatchesQuery),
+                    ]);
+
+                    const allMatchDocs = [
+                        ...matchesSnapshot.docs,
+                        ...team1MatchesSnapshot.docs,
+                        ...team2MatchesSnapshot.docs,
+                    ];
+
+                    const uniqueMatches = Array.from(
+                        new Map(
+                            allMatchDocs.map((doc) => [
+                                doc.id,
+                                {
+                                    id: doc.id,
+                                    ...(doc.data() as Omit<Match, "id">),
+                                },
+                            ])
+                        ).values()
+                    );
+
+                    const now = Date.now();
+                    const batch = writeBatch(FIRESTORE_DB);
+                    let hasStatusUpdates = false;
+
+                    uniqueMatches.forEach((match) => {
+                        const team1Count = (match.teams?.team1 || []).filter(Boolean).length;
+                        const team2Count = (match.teams?.team2 || []).filter(Boolean).length;
+                        const filledSpots = team1Count + team2Count;
+
+                        const shouldBeFinished = match.end.toDate().getTime() < now;
+                        const shouldBeFull = !shouldBeFinished && filledSpots >= 4;
+                        const nextStatus = shouldBeFinished ? "finished" : shouldBeFull ? "full" : "open";
+
+                        if (match.status !== nextStatus) {
+                            batch.update(doc(FIRESTORE_DB, "matches", match.id), { status: nextStatus });
+                            match.status = nextStatus;
+                            hasStatusUpdates = true;
+                        }
+                    });
+
+                    if (hasStatusUpdates) {
+                        await batch.commit();
+                    }
+
+                    const upcomingMatches = uniqueMatches
+                        .filter((match) => match.end.toDate().getTime() >= now)
                         .sort((a, b) => a.start.toDate().getTime() - b.start.toDate().getTime());
 
                     setMatches(upcomingMatches);
@@ -167,7 +223,11 @@ const App = () => {
                 return "Bevestigd";
             case "cancelled":
                 return "Geannuleerd";
-            case "completed":
+            case "open":
+                return "Open";
+            case "full":
+                return "Vol";
+            case "finished":
                 return "Voltooid";
             default:
                 return status;
@@ -299,6 +359,16 @@ const App = () => {
                 {/* SECTION */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Matches</Text>
+
+                    <Pressable
+                        onPress={() => router.push("/match/matches")}
+                        style={({ pressed }) => [
+                            styles.seeAllBtn,
+                            pressed && { opacity: 0.6 }
+                        ]}
+                    >
+                        <Text style={styles.seeAllText}>Alle matches</Text>
+                    </Pressable>
                 </View>
 
                 {loading ? (
@@ -368,6 +438,12 @@ export const getStatusColor = (status: string) => {
             return "#27ae60";
         case "cancelled":
             return "#e74c3c";
+        case "open":
+            return "#0984e3";
+        case "full":
+            return "#f39c12";
+        case "finished":
+            return "#7f8c8d";
         default:
             return "#999";
     }

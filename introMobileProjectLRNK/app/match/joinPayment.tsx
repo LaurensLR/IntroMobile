@@ -170,7 +170,7 @@ const JoinPayment = () => {
 
             router.replace({
                 pathname: "/match/[matchId]",
-                params: { matchId },
+                params: { matchId, from: "payment" },
             } as any);
         } catch (error: any) {
             const code = error?.message;

@@ -9,6 +9,7 @@ export default function MatchLayout() {
             <Stack.Screen name="[matchId]" />
             <Stack.Screen name="joinPayment" />
             <Stack.Screen name="searchMatches" />
+            <Stack.Screen name="matches" />
             <Stack.Screen name="MatchConfirmation" />
         </Stack>
     );
