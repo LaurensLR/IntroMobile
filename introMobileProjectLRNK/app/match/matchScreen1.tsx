@@ -56,7 +56,7 @@ const MatchScreen1 = () => {
         const days: { key: string; label: string }[] = [];
         const today = new Date();
 
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 30; i++) {
             const d = new Date();
             d.setDate(today.getDate() + i);
 

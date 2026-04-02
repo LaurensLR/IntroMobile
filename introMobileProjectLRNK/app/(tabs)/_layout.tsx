@@ -37,7 +37,7 @@ const HomeLayout = () => {
         getDoc(doc(FIRESTORE_DB, "users", currentUser.uid)).then((snap) => {
             if (snap.exists()) {
                 const data = snap.data();
-                setTabsVisible(!!(data.sport && data.level));
+                setTabsVisible(!!data.level);
             } else {
                 setTabsVisible(false);
             }
