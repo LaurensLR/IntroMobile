@@ -285,7 +285,7 @@ const MatchView = () => {
             : "Deze wedstrijd is ontspannen en heeft geen invloed op ranking";
 
     const isMatchFinished = match.end.toDate() < now;
-    const hasScore = !!match.score;
+    const hasScore = !!match.score?.sets?.length;
 
     return (
         <View style={styles.screen}>
@@ -423,16 +423,16 @@ const MatchView = () => {
                         <Pressable
                             style={[
                                 styles.scoreBtn,
-                                !isMatchFinished && !hasScore && { opacity: 0.5 }
+                                !hasScore && !isMatchFinished && { opacity: 0.5 }
                             ]}
-                            disabled={!isMatchFinished && !hasScore}
+                            disabled={!hasScore && !isMatchFinished}
                             onPress={() => {
-                                if (!isMatchFinished && !hasScore) return;
+                                if (!hasScore && !isMatchFinished) return;
 
                                 router.push({
                                     pathname: hasScore
                                         ? "/match/score/view"
-                                        : "/match/score/score",
+                                        : "/match/score",
                                     params: { matchId }
                                 });
                             }}
@@ -442,7 +442,7 @@ const MatchView = () => {
                                     ? "Score bekijken"
                                     : isMatchFinished
                                         ? "Score ingeven"
-                                        : "Score ingeven pas beschikbaar na wedstrijd"}
+                                        : "Score pas beschikbaar na de wedstrijd"}
                             </Text>
                         </Pressable>
                     )}

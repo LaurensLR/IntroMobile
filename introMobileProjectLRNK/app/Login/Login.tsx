@@ -41,7 +41,7 @@ const Login = () => {
       await setDoc(doc(FIRESTORE_DB, "users", credential.user.uid), {
         username: username.trim(),
         sport: "padel",
-        level: null,
+        level: 1.5,
       });
       router.replace("/(tabs)/profile");
     } catch (error) {

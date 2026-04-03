@@ -1,32 +1,113 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert, StyleSheet } from "react-native";
 import Header from "@/app/components/header";
-import {getWinner, InputSet, SetScore} from "@/src/lib/ranking";
+import {calculateDelta, getWinner, InputSet, SetScore} from "@/src/lib/ranking";
+import {doc, getDoc, updateDoc} from "firebase/firestore";
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
+import {router, useLocalSearchParams} from "expo-router";
 
 
 const MatchScoreScreen = ()=>  {
+    const params = useLocalSearchParams();
+    const matchId = params.matchId as string;
     const [sets, setSets] = useState<InputSet[]>([
         { team1: "", team2: "" },
         { team1: "", team2: "" },
         { team1: "", team2: "" },
     ]);
 
-    const handleSubmit = () => {
-        const parsedSets: SetScore[] = sets
+    const handleSubmit = async () => {
+        const parsedSetsArray: SetScore[] = sets
             .filter((s) => s.team1 !== "" && s.team2 !== "")
             .map((s) => [Number(s.team1), Number(s.team2)]);
 
-        const winner = getWinner(parsedSets);
+        const parsedSetsFirestore = sets
+            .filter((s) => s.team1 !== "" && s.team2 !== "")
+            .map((s) => ({
+                team1: Number(s.team1),
+                team2: Number(s.team2),
+            }));
+
+        const winner = getWinner(parsedSetsArray);
 
         if (!winner) {
             Alert.alert("Ongeldige score");
             return;
         }
 
-        console.log("Winner:", winner);
-        console.log("Sets:", parsedSets);
+        try {
+            const matchRef = doc(FIRESTORE_DB, "matches", matchId);
+            const matchSnap = await getDoc(matchRef);
 
-        // 👉 hier Firestore save later
+            if (!matchSnap.exists()) {
+                Alert.alert("Match niet gevonden");
+                return;
+            }
+
+            const matchData = matchSnap.data();
+
+            await updateDoc(matchRef, {
+                score: {
+                    sets: parsedSetsFirestore,
+                    winner,
+                },
+                status: "finished",
+            });
+
+            const team1: string[] = matchData.teams?.team1 || [];
+            const team2: string[] = matchData.teams?.team2 || [];
+
+            const getUserLevel = async (userId: string) => {
+                const ref = doc(FIRESTORE_DB, "users", userId);
+                const snap = await getDoc(ref);
+                return snap.exists() ? Number(snap.data().level ?? 1.5) : 1.5;
+            };
+
+            const team1Levels = await Promise.all(team1.map(getUserLevel));
+            const team2Levels = await Promise.all(team2.map(getUserLevel));
+
+            const updatePlayer = async (
+                userId: string,
+                playerLevel: number,
+                opponents: number[],
+                didWin: boolean
+            ) => {
+                const delta = calculateDelta(
+                    playerLevel,
+                    opponents[0] ?? 1.5,
+                    opponents[1] ?? 1.5,
+                    didWin
+                );
+
+                const newLevel = Math.max(1, Number((playerLevel + delta).toFixed(2)));
+
+                await updateDoc(doc(FIRESTORE_DB, "users", userId), {
+                    level: newLevel
+                });
+            };
+
+            await Promise.all(
+                team1.map((userId, i) =>
+                    updatePlayer(userId, team1Levels[i], team2Levels, winner === "team1")
+                )
+            );
+
+            await Promise.all(
+                team2.map((userId, i) =>
+                    updatePlayer(userId, team2Levels[i], team1Levels, winner === "team2")
+                )
+            );
+
+            Alert.alert("Score opgeslagen!");
+            router.replace({
+                pathname: "/match/score/view",
+                params: { matchId }
+            });
+
+        } catch (error) {
+            console.log(error);
+            Alert.alert("Fout bij opslaan");
+        }
     };
 
     return (

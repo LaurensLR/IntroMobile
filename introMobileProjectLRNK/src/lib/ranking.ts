@@ -5,7 +5,6 @@ type InputSet = {
 
 type SetScore = [number, number];
 
-
 const isValidSet = (p: number, o: number) => {
     if (p < 0 || o < 0) return false;
 
@@ -35,52 +34,43 @@ const getWinner = (sets: SetScore[]) => {
     return null;
 };
 
-const getK = (player: number, avg: number) => {
-    const diff = Math.abs(player - avg);
 
-    if (diff < 0.5) return 0.25;
-    if (diff < 1.5) return 0.2;
-    return 0.15;
+const getCategory = (level: number) => {
+    if (level < 2) return 0; // Beginner
+    if (level < 4) return 1; // Intermediate
+    if (level < 6) return 2; // Advanced
+    return 3; // Pro
 };
 
-const cap = (delta: number, max = 0.2) =>
-    Math.max(-max, Math.min(max, delta));
+const ratingMatrix = [
+    [0.02, 0.03, 0.04, 0.05],
+    [0.015, 0.02, 0.03, 0.04],
+    [0.01, 0.015, 0.02, 0.03],
+    [0.005, 0.01, 0.015, 0.02],
+];
 
 
-const updateRating = (
+const cap = (value: number) => Math.max(-0.3, Math.min(0.3, value));
+
+
+const calculateDelta = (
     playerLevel: number,
     opponent1: number,
     opponent2: number,
-    setsWon: number,
-    setsLost: number,
-    gamesWon: number,
-    gamesLost: number
+    didWin: boolean
 ) => {
-    const avg = (opponent1 + opponent2) / 2;
+    const playerCat = getCategory(playerLevel);
 
+    const opponentAvg = (opponent1 + opponent2) / 2;
+    const opponentCat = getCategory(opponentAvg);
 
-    const expectedRaw = 1 / (1 + 10 ** ((avg - playerLevel) / 1.5));
-    const expected = Math.max(0.01, Math.min(0.99, expectedRaw));
+    const base = ratingMatrix[playerCat][opponentCat];
 
-    const totalSets = setsWon + setsLost;
-    const setScore = totalSets > 0 ? setsWon / totalSets : 0;
+    let delta = didWin ? base : -base;
 
-    const totalGames = gamesWon + gamesLost;
-    const gameDiff = totalGames > 0
-        ? (gamesWon - gamesLost) / totalGames
-        : 0;
+    delta = cap(delta);
 
-    const scoreRaw = 0.8 * setScore + 0.2 * (0.5 + gameDiff / 2);
-    const score = Math.max(0, Math.min(1, scoreRaw));
-
-    const K = getK(playerLevel, avg);
-
-    const delta = K * (score - expected);
-    const cappedDelta = cap(delta);
-
-    const newLevel = playerLevel + cappedDelta;
-
-    return Number(newLevel.toFixed(3));
+    return Number(delta.toFixed(2));
 };
 
 export {
@@ -88,6 +78,5 @@ export {
     SetScore,
     getWinner,
     isValidSet,
-    updateRating,
-    getK
+    calculateDelta
 };

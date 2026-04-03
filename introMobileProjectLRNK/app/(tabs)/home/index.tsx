@@ -97,7 +97,6 @@ const CustomButton = ({ onPress, imageSource, label }: CustomButtonProps) => (
 
 
 const App = () => {
-    const [userClubs] = useState<Club[]>([]);
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -283,8 +282,7 @@ const App = () => {
                         label="Boek"
                     />
                     <CustomButton
-                        //https://playtomic.com/blog/basic-padel-rules-beginners
-                        onPress={() => router.push("/match/score")}
+                        onPress={() => router.push("https://playtomic.com/blog/basic-padel-rules-beginners")}
                         imageSource={require("../../../assets/images/learningPicto.png")}
                         label="Leren"
                     />

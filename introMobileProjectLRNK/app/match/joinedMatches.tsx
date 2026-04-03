@@ -95,6 +95,8 @@ const Matches = () => {
                         const shouldBeFull = !shouldBeFinished && filledSpots >= 4;
                         const nextStatus = shouldBeFinished ? "finished" : shouldBeFull ? "full" : "open";
 
+
+
                         if (match.status !== nextStatus) {
                             batch.update(doc(FIRESTORE_DB, "matches", match.id), { status: nextStatus });
                             match.status = nextStatus;

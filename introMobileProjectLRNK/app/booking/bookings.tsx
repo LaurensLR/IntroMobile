@@ -84,6 +84,7 @@ const Bookings = () => {
     if (bookings.length === 0) {
         return (
             <View style={styles.center}>
+                <Header title="Jouw reservaties" />
                 <Text>Geen boekingen gevonden</Text>
             </View>
         );

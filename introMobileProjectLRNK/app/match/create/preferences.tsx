@@ -1,10 +1,14 @@
+import {getAuth} from "firebase/auth";
+
 {/* Gebruiker kan kiezen tussen competitief of vriendschappelijk en met welk
 * geslacht hij/zij het liefst speelt.*/}
 
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import {View, StyleSheet, Text, TouchableOpacity, ScrollView} from "react-native";
 import {router, useLocalSearchParams} from "expo-router";
 import Header from "@/app/components/header";
+import {doc, getDoc} from "firebase/firestore";
+import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 
 const RadioButton = ({ selected }: { selected: boolean }) => {
     return (
@@ -24,8 +28,28 @@ const Preferences = () => {
         time,
     } = useLocalSearchParams();
 
+    const [level, setLevel] = useState<number | null>(null);
     const [competitive, setCompetitive] = useState(true);
     const [gender, setGender] = useState("all");
+
+    useEffect(() => {
+        const fetchLevel = async () => {
+            const user = getAuth().currentUser;
+            if (!user) return;
+
+            const snap = await getDoc(doc(FIRESTORE_DB, "users", user.uid));
+
+            if (snap.exists()) {
+                const data = snap.data();
+                setLevel(data.level ?? 1.5);
+            }
+        };
+
+        fetchLevel();
+    }, []);
+
+    const minLevel = level ? Math.max(0, level - 0.5) : 0;
+    const maxLevel = level ? level + 0.5 : 0;
 
     return (
 
@@ -51,13 +75,20 @@ const Preferences = () => {
                                 <Text style={styles.optionDesc}>
                                     Het resultaat heeft invloed op je niveau en ranking.
                                 </Text>
+                                <Text style={{fontSize: 13, color: "#7f8c8d",}}>
+                                    Jouw niveau: {level?.toFixed(2)}
+                                </Text>
                             </View>
                         </TouchableOpacity>
 
                         {competitive && (
                             <View style={styles.infoCard}>
                                 <Text style={styles.infoTitle}>Rang van het partijniveau</Text>
-                                <Text style={styles.infoValue}>0.25 - 1.25</Text>
+                                <Text style={styles.infoValue}>
+                                    {level
+                                        ? `${minLevel.toFixed(2)} - ${maxLevel.toFixed(2)}`
+                                        : "..."}
+                                </Text>
                                 <Text style={styles.infoDesc}>
                                     Spelers buiten bereik kunnen aanvragen
                                 </Text>

@@ -9,9 +9,13 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {useFollows} from "@/src/hooks/useFollows";
 //import { seeding } from "@/app/firebase/seedClubs"
 
-type Level = "beginner" | "intermediate" | "pro";
+const getLevelLabel = (level: number) => {
+    if (level < 2) return "Beginner";
+    if (level < 4) return "Intermediate";
+    if (level < 6) return "Advanced";
+    return "Pro";
+};
 
-const LEVELS: Level[] = ["beginner", "intermediate", "pro"];
 const DEFAULT_SPORT = "padel";
 
 const auth = getAuth();
@@ -30,7 +34,7 @@ const Index = () => {
     }
     const userId = auth.currentUser.uid
     const [username, setUsername] = useState<string>("");
-    const [level, setLevel] = useState<Level | null>(null);
+    const [level, setLevel] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [user, setUser] = useState<User | null>(null);
@@ -74,8 +78,6 @@ const Index = () => {
         }, [user?.uid])
     );
 
-    console.log(matches);
-
     useEffect(() => {
         return onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
             setUser(currentUser);
@@ -94,7 +96,7 @@ const Index = () => {
                     const data = snap.data();
                     setUsername(data.username ?? "");
                     setLevel(data.level ?? null);
-                    setIsFirstSetup(!data.level);
+                    setIsFirstSetup(typeof data.level !== "number");
                 }
             }).finally(() => setLoading(false));
         });
@@ -102,19 +104,14 @@ const Index = () => {
 
     const save = async () => {
         if (!user) return;
-        if (!level) {
-            Alert.alert("Verplicht", "Kies een niveau om verder te gaan.");
-            return;
-        }
+
         setSaving(true);
         try {
-            await updateDoc(doc(FIRESTORE_DB, "users", user.uid), { sport: DEFAULT_SPORT, level });
-            if (isFirstSetup) {
-                setIsFirstSetup(false);
-                router.replace("/");
-            } else {
-                Alert.alert("Opgeslagen", "Je voorkeuren zijn bijgewerkt.");
-            }
+            await updateDoc(doc(FIRESTORE_DB, "users", user.uid), {
+                sport: DEFAULT_SPORT,
+            });
+
+            Alert.alert("Opgeslagen");
         } catch (e) {
             Alert.alert("Fout", "Kon voorkeuren niet opslaan.");
             console.log(e);
@@ -143,19 +140,25 @@ const Index = () => {
                     <Text style={styles.title}>Welkom, {username}!</Text>
                     <Text style={styles.subtitle}>Stel je voorkeuren in om te beginnen.</Text>
 
-                    <Text style={styles.sectionLabel}>Kies je niveau</Text>
-                    <View style={styles.optionRow}>
-                        {LEVELS.map((l) => (
-                            <Pressable
-                                key={l}
-                                onPress={() => setLevel(l)}
-                                style={[styles.optionBtn, level === l && styles.optionBtnActive]}
-                            >
-                                <Text style={[styles.optionText, level === l && styles.optionTextActive]}>
-                                    {l.charAt(0).toUpperCase() + l.slice(1)}
-                                </Text>
-                            </Pressable>
-                        ))}
+                    <Text style={styles.sectionLabel}>Niveau</Text>
+
+                    <View style={{
+                        backgroundColor: "#f5f6fa",
+                        padding: 16,
+                        borderRadius: 12,
+                        alignItems: "center"
+                    }}>
+                        <Text style={{ fontSize: 28, fontWeight: "bold" }}>
+                            {typeof level === "number"
+                                ? level.toFixed(2)
+                                : "1.50"}
+                        </Text>
+
+                        <Text style={{ color: "#666", marginTop: 4 }}>
+                            {typeof level === "number"
+                                ? getLevelLabel(level)
+                                : "Startniveau"}
+                        </Text>
                     </View>
 
                     {saving ? (
@@ -274,18 +277,22 @@ const Index = () => {
 
                 {/* LEVEL */}
                 <Text style={styles.sectionLabel}>Niveau</Text>
-                <View style={styles.optionRow}>
-                    {LEVELS.map((l) => (
-                        <Pressable
-                            key={l}
-                            onPress={() => setLevel(l)}
-                            style={[styles.optionBtn, level === l && styles.optionBtnActive]}
-                        >
-                            <Text style={[styles.optionText, level === l && styles.optionTextActive]}>
-                                {l}
-                            </Text>
-                        </Pressable>
-                    ))}
+
+                <View style={{
+                    backgroundColor: "#f5f6fa",
+                    padding: 16,
+                    borderRadius: 12,
+                    alignItems: "center"
+                }}>
+                    <Text style={{ fontSize: 28, fontWeight: "bold" }}>
+                        {typeof level === "number"
+                            ? level.toFixed(2)
+                            : "1.50"}
+                    </Text>
+
+                    <Text style={{ color: "#666", marginTop: 4 }}>
+                        {level ? getLevelLabel(level) : "Startniveau"}
+                    </Text>
                 </View>
 
                 {/* RANKING */}

@@ -28,7 +28,6 @@ export type MatchItem = {
     pricePerPlayer?: number;
 
     score?: {
-        team1: number;
-        team2: number;
+        sets: [number, number][],
     };
 };

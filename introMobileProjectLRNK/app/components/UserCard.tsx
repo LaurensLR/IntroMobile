@@ -34,7 +34,7 @@ const UserCard = ({ id, username, level }: UserCardProps) => {
 
                 <View>
                     <Text style={styles.username}>{username}</Text>
-                    {level && <Text style={styles.level}>{level}</Text>}
+                    {level && <Text style={styles.level}>Ranking: {level}</Text>}
                 </View>
             </View>
         </Pressable>
