@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useMemo, useState} from "react";
 import { View, StyleSheet, Text, Pressable, Image, ImageSourcePropType, ScrollView, ActivityIndicator } from "react-native";
 import {router, useFocusEffect} from "expo-router";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
@@ -101,6 +101,7 @@ const App = () => {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [userName, setUserName] = useState<string | null>(null);
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -116,6 +117,15 @@ const App = () => {
             const fetchUserBookings = async () => {
                 try {
                     setLoading(true);
+
+                    const userSnap = await getDocs(query(
+                        collection(FIRESTORE_DB, "users"),
+                        where("__name__", "==", user.uid)
+                    ));
+
+                    const userDoc = userSnap.docs[0];
+                    const userData = userDoc?.data();
+                    setUserName((userData?.username as string) || user.displayName || null);
 
                     const bookingsQuery = query(
                         collection(FIRESTORE_DB, "bookings"),
@@ -234,16 +244,19 @@ const App = () => {
         }
     };
 
-    const messages = [
-        `Welkom ${user?.displayName}`,
+    const welcomeName = userName || user?.displayName || "speler";
+
+    const messages = useMemo(() => [
+        `Welkom ${welcomeName}`,
         "Ben je klaar voor jouw volgende wedstrijd?",
         "Tijd om het veld te domineren!",
         "Wie wordt de winnaar vandaag?",
         "Vandaag is een fantastische dag om padel te spelen!",
-    ];
+    ], [welcomeName]);
 
-    const [message] = useState(
-        messages[Math.floor(Math.random() * messages.length)]
+    const message = useMemo(
+        () => messages[Math.floor(Math.random() * messages.length)],
+        [messages]
     );
 
 

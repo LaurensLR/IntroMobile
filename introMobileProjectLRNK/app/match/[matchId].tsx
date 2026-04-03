@@ -309,7 +309,7 @@ const MatchView = () => {
                 <View style={styles.content}>
                     <View style={styles.summaryCard}>
                     <View style={styles.summaryTopRow}>
-                        <Ionicons name="tennisball-outline" size={20} color="#4b5b6a" />
+                        <Ionicons name="trophy-outline" size={20} color="#4b5b6a" />
                         <View style={styles.summaryTitleWrap}>
                             <Text style={styles.summaryTitle}>PADEL</Text>
                             <Text style={styles.summaryDate}>{formatLongDateTime(match.start, match.end)}</Text>

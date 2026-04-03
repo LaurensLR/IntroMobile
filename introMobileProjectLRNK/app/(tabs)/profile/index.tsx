@@ -9,11 +9,10 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {useFollows} from "@/src/hooks/useFollows";
 //import { seeding } from "@/app/firebase/seedClubs"
 
-type Sport = "tennis" | "padel";
 type Level = "beginner" | "intermediate" | "pro";
 
-const SPORTS: Sport[] = ["tennis", "padel"];
 const LEVELS: Level[] = ["beginner", "intermediate", "pro"];
+const DEFAULT_SPORT = "padel";
 
 const auth = getAuth();
 
@@ -31,7 +30,6 @@ const Index = () => {
     }
     const userId = auth.currentUser.uid
     const [username, setUsername] = useState<string>("");
-    const [sport, setSport] = useState<Sport | null>(null);
     const [level, setLevel] = useState<Level | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -83,7 +81,6 @@ const Index = () => {
             setUser(currentUser);
             // Reset state voor elke gebruikerswissel
             setUsername("");
-            setSport(null);
             setLevel(null);
 
             if (!currentUser) {
@@ -96,9 +93,8 @@ const Index = () => {
                 if (snap.exists()) {
                     const data = snap.data();
                     setUsername(data.username ?? "");
-                    setSport(data.sport ?? null);
                     setLevel(data.level ?? null);
-                    setIsFirstSetup(!data.sport && !data.level);
+                    setIsFirstSetup(!data.level);
                 }
             }).finally(() => setLoading(false));
         });
@@ -106,13 +102,13 @@ const Index = () => {
 
     const save = async () => {
         if (!user) return;
-        if (!sport || !level) {
-            Alert.alert("Verplicht", "Kies een sport en een niveau om verder te gaan.");
+        if (!level) {
+            Alert.alert("Verplicht", "Kies een niveau om verder te gaan.");
             return;
         }
         setSaving(true);
         try {
-            await updateDoc(doc(FIRESTORE_DB, "users", user.uid), { sport, level });
+            await updateDoc(doc(FIRESTORE_DB, "users", user.uid), { sport: DEFAULT_SPORT, level });
             if (isFirstSetup) {
                 setIsFirstSetup(false);
                 router.replace("/");
@@ -147,21 +143,6 @@ const Index = () => {
                     <Text style={styles.title}>Welkom, {username}!</Text>
                     <Text style={styles.subtitle}>Stel je voorkeuren in om te beginnen.</Text>
 
-                    <Text style={styles.sectionLabel}>Kies je sport</Text>
-                    <View style={styles.optionRow}>
-                        {SPORTS.map((s) => (
-                            <Pressable
-                                key={s}
-                                onPress={() => setSport(s)}
-                                style={[styles.optionBtn, sport === s && styles.optionBtnActive]}
-                            >
-                                <Text style={[styles.optionText, sport === s && styles.optionTextActive]}>
-                                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-
                     <Text style={styles.sectionLabel}>Kies je niveau</Text>
                     <View style={styles.optionRow}>
                         {LEVELS.map((l) => (
@@ -182,7 +163,7 @@ const Index = () => {
                     ) : (
                         <Pressable
                             onPress={save}
-                            style={[styles.saveBtn, (!sport || !level) && styles.saveBtnDisabled]}
+                            style={[styles.saveBtn, (!level) && styles.saveBtnDisabled]}
                         >
                             <Text style={styles.saveBtnText}>Aan de slag</Text>
                         </Pressable>
@@ -239,15 +220,6 @@ const Index = () => {
                         )}
                     </View>
 
-                    <Pressable
-                        onPress={() => router.push("/profile/profileSettings")}
-                        style={({ pressed }) => [
-                            { padding: 8 },
-                            pressed && { opacity: 0.6 }
-                        ]}
-                    >
-                        <FontAwesome name="bars" size={22} color="white" />
-                    </Pressable>
                 </View>
             </View>
 
@@ -298,22 +270,6 @@ const Index = () => {
                             })
                         }
                     />
-                </View>
-
-                {/* SPORT */}
-                <Text style={styles.sectionLabel}>Sport</Text>
-                <View style={styles.optionRow}>
-                    {SPORTS.map((s) => (
-                        <Pressable
-                            key={s}
-                            onPress={() => setSport(s)}
-                            style={[styles.optionBtn, sport === s && styles.optionBtnActive]}
-                        >
-                            <Text style={[styles.optionText, sport === s && styles.optionTextActive]}>
-                                {s}
-                            </Text>
-                        </Pressable>
-                    ))}
                 </View>
 
                 {/* LEVEL */}

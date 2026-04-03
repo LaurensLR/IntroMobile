@@ -40,7 +40,7 @@ const Login = () => {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(FIRESTORE_DB, "users", credential.user.uid), {
         username: username.trim(),
-        sport: null,
+        sport: "padel",
         level: null,
       });
       router.replace("/(tabs)/profile");

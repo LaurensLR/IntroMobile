@@ -1,7 +1,7 @@
 {/* Gebruiker kan een wedstrijd zoeken */}
 
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { collection, getDocs, query, Timestamp, where } from "firebase/firestore";
 import { router } from "expo-router";
 import Header from "@/app/components/header";
@@ -20,6 +20,7 @@ type MatchItem = {
     start: Timestamp;
     end: Timestamp;
     matchType: "competitive" | "friendly";
+    gender?: "all" | "men" | "women" | "mixed";
     levelRange?: {
         min: number;
         max: number;
@@ -105,11 +106,37 @@ const TeamPlayer = ({ name, imageUrl, isOpenSpot }: ResolvedPlayer) => (
     </View>
 );
 
+type LevelFilter = {
+    key: string;
+    label: string;
+    min?: number;
+    max?: number;
+};
+
+type TimeFilter = "any" | "morning" | "afternoon" | "evening";
+type DateFilter = "any" | "today" | "next7";
+type TypeFilter = "all" | "competitive" | "friendly";
+type GenderFilter = "all" | "mixed" | "men" | "women";
+
+const LEVEL_FILTERS: LevelFilter[] = [
+    { key: "any", label: "Alle niveaus" },
+    { key: "low", label: "0.25 - 1.0", min: 0.25, max: 1.0 },
+    { key: "mid", label: "1.0 - 1.75", min: 1.0, max: 1.75 },
+    { key: "high", label: "1.75 - 2.5", min: 1.75, max: 2.5 },
+];
+
 const SearchMatches = () => {
     const [matches, setMatches] = useState<MatchItem[]>([]);
     const [clubAddresses, setClubAddresses] = useState<Record<string, ClubAddress>>({});
     const [usersById, setUsersById] = useState<Record<string, UserProfile>>({});
     const [loading, setLoading] = useState(true);
+    const [selectedLevel, setSelectedLevel] = useState("any");
+    const [selectedDate, setSelectedDate] = useState<DateFilter>("any");
+    const [selectedTime, setSelectedTime] = useState<TimeFilter>("any");
+    const [selectedLocation, setSelectedLocation] = useState("all");
+    const [selectedGender, setSelectedGender] = useState<GenderFilter>("all");
+    const [selectedType, setSelectedType] = useState<TypeFilter>("all");
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -162,6 +189,79 @@ const SearchMatches = () => {
 
         fetchData();
     }, []);
+
+    const locationOptions = useMemo(() => {
+        const cities = Object.values(clubAddresses)
+            .map((club) => club.city)
+            .filter((city): city is string => Boolean(city))
+            .map((city) => city.trim())
+            .filter(Boolean);
+
+        const uniqueCities = Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
+
+        return [
+            { key: "all", label: "Alle locaties" },
+            ...uniqueCities.map((city) => ({ key: city, label: city })),
+        ];
+    }, [clubAddresses]);
+
+    const filteredMatches = useMemo(() => {
+        const levelFilter = LEVEL_FILTERS.find((filter) => filter.key === selectedLevel);
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const next7End = new Date(todayStart);
+        next7End.setDate(next7End.getDate() + 7);
+
+        return matches.filter((match) => {
+            const start = match.start?.toDate?.();
+            if (!start) return false;
+
+            if (selectedDate === "today") {
+                if (start < todayStart || start > todayEnd) return false;
+            }
+
+            if (selectedDate === "next7") {
+                if (start < todayStart || start > next7End) return false;
+            }
+
+            if (selectedTime !== "any") {
+                const hour = start.getHours();
+                if (selectedTime === "morning" && (hour < 6 || hour >= 12)) return false;
+                if (selectedTime === "afternoon" && (hour < 12 || hour >= 18)) return false;
+                if (selectedTime === "evening" && (hour < 18 || hour >= 23)) return false;
+            }
+
+            if (selectedType !== "all" && match.matchType !== selectedType) return false;
+
+            if (selectedGender !== "all") {
+                const matchGender = match.gender ?? "all";
+                if (matchGender !== selectedGender) return false;
+            }
+
+            if (selectedLocation !== "all") {
+                const clubCity = clubAddresses[match.clubId]?.city?.trim();
+                if (!clubCity || clubCity !== selectedLocation) return false;
+            }
+
+            if (levelFilter && levelFilter.min !== undefined && levelFilter.max !== undefined) {
+                const levelMin = match.levelRange?.min ?? 0.25;
+                const levelMax = match.levelRange?.max ?? 2.5;
+                if (levelMax < levelFilter.min || levelMin > levelFilter.max) return false;
+            }
+
+            return true;
+        });
+    }, [
+        matches,
+        clubAddresses,
+        selectedDate,
+        selectedTime,
+        selectedType,
+        selectedGender,
+        selectedLocation,
+        selectedLevel,
+    ]);
 
     const renderCard = ({ item }: { item: MatchItem }) => {
         const players = item.players || [];
@@ -274,15 +374,190 @@ const SearchMatches = () => {
 
             {loading ? (
                 <ActivityIndicator size="large" color="#345fff" style={styles.loader} />
-            ) : matches.length === 0 ? (
-                <Text style={styles.emptyText}>Er zijn momenteel geen beschikbare matches.</Text>
             ) : (
                 <FlatList
-                    data={matches}
+                    data={filteredMatches}
                     keyExtractor={(item) => item.id}
                     renderItem={renderCard}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListHeaderComponent={
+                        <View style={styles.filtersCard}>
+                            <Pressable
+                                style={styles.filtersHeader}
+                                onPress={() => setFiltersOpen((prev) => !prev)}
+                            >
+                                <View>
+                                    <Text style={styles.filtersTitle}>Filters</Text>
+                                    <Text style={styles.filtersCount}>{`${filteredMatches.length} resultaten`}</Text>
+                                </View>
+                                <Text style={styles.filtersToggle}>{filtersOpen ? "Verbergen" : "Tonen"}</Text>
+                            </Pressable>
+
+                            {filtersOpen && (
+                                <View>
+                                    <Text style={styles.filtersLabel}>Niveau</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {LEVEL_FILTERS.map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedLevel(option.key)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedLevel === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedLevel === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.filtersLabel}>Datum</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {[
+                                            { key: "any", label: "Alle datums" },
+                                            { key: "today", label: "Vandaag" },
+                                            { key: "next7", label: "Volgende 7 dagen" },
+                                        ].map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedDate(option.key as DateFilter)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedDate === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedDate === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.filtersLabel}>Tijd</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {[
+                                            { key: "any", label: "Elke tijd" },
+                                            { key: "morning", label: "Ochtend" },
+                                            { key: "afternoon", label: "Middag" },
+                                            { key: "evening", label: "Avond" },
+                                        ].map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedTime(option.key as TimeFilter)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedTime === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedTime === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.filtersLabel}>Locatie</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {locationOptions.map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedLocation(option.key)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedLocation === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedLocation === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.filtersLabel}>Matchtype</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {[
+                                            { key: "all", label: "Alle types" },
+                                            { key: "competitive", label: "Competitief" },
+                                            { key: "friendly", label: "Vriendschappelijk" },
+                                        ].map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedType(option.key as TypeFilter)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedType === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedType === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+
+                                    <Text style={styles.filtersLabel}>Gender</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
+                                        {[
+                                            { key: "all", label: "Alle spelers" },
+                                            { key: "mixed", label: "Gemengd" },
+                                            { key: "men", label: "Mannen" },
+                                            { key: "women", label: "Vrouwen" },
+                                        ].map((option) => (
+                                            <Pressable
+                                                key={option.key}
+                                                onPress={() => setSelectedGender(option.key as GenderFilter)}
+                                                style={[
+                                                    styles.filterChip,
+                                                    selectedGender === option.key && styles.filterChipActive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.filterChipText,
+                                                        selectedGender === option.key && styles.filterChipTextActive,
+                                                    ]}
+                                                >
+                                                    {option.label}
+                                                </Text>
+                                            </Pressable>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            )}
+                        </View>
+                    }
+                    ListEmptyComponent={
+                        <Text style={styles.emptyText}>Geen matches die overeenkomen met je filters.</Text>
+                    }
                 />
             )}
         </View>
@@ -302,10 +577,73 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     emptyText: {
-        marginTop: 40,
+        marginTop: 24,
         textAlign: "center",
         color: "#7f8c8d",
         fontSize: 15,
+    },
+    filtersCard: {
+        backgroundColor: "#ffffff",
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 14,
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 2,
+    },
+    filtersHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 10,
+    },
+    filtersTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: "#0f2a3d",
+    },
+    filtersCount: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#7f8c8d",
+    },
+    filtersToggle: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#345fff",
+    },
+    filtersLabel: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#2c3e50",
+        marginTop: 10,
+        marginBottom: 6,
+    },
+    filtersRow: {
+        paddingBottom: 6,
+    },
+    filterChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#dfe6e9",
+        backgroundColor: "#f7f9fc",
+        marginRight: 8,
+    },
+    filterChipActive: {
+        backgroundColor: "#0f2a3d",
+        borderColor: "#0f2a3d",
+    },
+    filterChipText: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#2c3e50",
+    },
+    filterChipTextActive: {
+        color: "#ffffff",
     },
     card: {
         backgroundColor: "#ffffff",
