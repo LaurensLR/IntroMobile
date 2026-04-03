@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View} from "react-native";
 import {FIREBASE_AUTH, FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
 import {getAuth, onAuthStateChanged, signOut, User} from "firebase/auth";
 import {collection, doc, getDoc, onSnapshot, query, updateDoc, where} from "firebase/firestore";
-import {router} from "expo-router";
+import {router, useFocusEffect} from "expo-router";
 import {FontAwesome} from "@expo/vector-icons";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {useFollows} from "@/src/hooks/useFollows";
@@ -16,8 +16,6 @@ const SPORTS: Sport[] = ["tennis", "padel"];
 const LEVELS: Level[] = ["beginner", "intermediate", "pro"];
 
 const auth = getAuth();
-
-
 
 export const getInitials = (name: string) =>
     name
@@ -43,9 +41,9 @@ const Index = () => {
     const { followersCount, followingCount } = useFollows(userId);
     const [matches, setMatches] = useState<number>(0);
     const stats = {
-        matches: matches,
+        matches,
         followers: followersCount,
-        following: followingCount
+        following: followingCount,
     };
 
     useEffect(() => {
@@ -61,18 +59,24 @@ const Index = () => {
         });
     }, [userId]);
 
-    useEffect(() => {
-        if (!user?.uid) return;
+    useFocusEffect(
+        useCallback(() => {
+            if (!user?.uid) return;
 
-        const q = query(
-            collection(FIRESTORE_DB, "matches"),
-            where("createdBy", "==", user.uid)
-        );
+            const q = query(
+                collection(FIRESTORE_DB, "matches"),
+                where("participants", "array-contains", user.uid)
+            );
 
-        return onSnapshot(q, (snap) => {
-            setMatches(snap.size);
-        });
-    }, [user]);
+            const unsubscribe = onSnapshot(q, (snap) => {
+                setMatches(snap.size);
+            });
+
+            return () => unsubscribe();
+        }, [user?.uid])
+    );
+
+    console.log(matches);
 
     useEffect(() => {
         return onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
@@ -189,21 +193,28 @@ const Index = () => {
         );
     }
 
-    const Stat = ({ label, value }: { label: string; value: number }) => (
-        <View style={{ alignItems: "center" }}>
+    const Stat = ({
+                      label,
+                      value,
+                      onPress,
+                  }: {
+        label: string;
+        value: number;
+        onPress?: () => void;
+    }) => (
+        <Pressable onPress={onPress} style={{ alignItems: "center" }}>
             <Text style={{ fontSize: 18, fontWeight: "bold" }}>
                 {value}
             </Text>
             <Text style={{ color: "#666", fontSize: 12 }}>
                 {label}
             </Text>
-        </View>
+        </Pressable>
     );
 
     return (
         <View style={{ flex: 1 }}>
 
-            {/* HEADER */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Profiel</Text>
 
@@ -242,7 +253,6 @@ const Index = () => {
 
             <ScrollView contentContainerStyle={styles.container}>
 
-                {/* PROFILE */}
                 <View style={styles.profileRow}>
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>
@@ -257,11 +267,37 @@ const Index = () => {
 
                 {/* STATS */}
                 <View style={styles.statsRow}>
-                    <Stat label="Wedstrijden" value={stats.matches} />
+                    <Stat
+                        label="Wedstrijden"
+                        value={stats.matches}
+                        onPress={() => router.push("/match/joinedMatches")}
+                    />
+
                     <View style={styles.divider} />
-                    <Stat label="Volgers" value={stats.followers} />
+
+                    <Stat
+                        label="Volgers"
+                        value={stats.followers}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/follows",
+                                params: { tab: "followers" },
+                            })
+                        }
+                    />
+
                     <View style={styles.divider} />
-                    <Stat label="Volgend" value={stats.following} />
+
+                    <Stat
+                        label="Volgend"
+                        value={stats.following}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/follows",
+                                params: { tab: "following" },
+                            })
+                        }
+                    />
                 </View>
 
                 {/* SPORT */}
@@ -295,6 +331,9 @@ const Index = () => {
                         </Pressable>
                     ))}
                 </View>
+
+                {/* RANKING */}
+                <Text style={styles.sectionLabel}>Ranking</Text>
 
                 {/* SAVE */}
                 {saving ? (

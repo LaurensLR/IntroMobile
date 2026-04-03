@@ -1,7 +1,9 @@
+{/* Gebruiker kan kiezen tussen competitief of vriendschappelijk en met welk
+* geslacht hij/zij het liefst speelt.*/}
+
 import React, { useState } from "react";
-import {View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert} from "react-native";
+import {View, StyleSheet, Text, TouchableOpacity, ScrollView} from "react-native";
 import {router, useLocalSearchParams} from "expo-router";
-import {getAuth} from "firebase/auth";
 import Header from "@/app/components/header";
 
 const RadioButton = ({ selected }: { selected: boolean }) => {
@@ -12,7 +14,7 @@ const RadioButton = ({ selected }: { selected: boolean }) => {
     );
 };
 
-const MatchScreen2 = () => {
+const Preferences = () => {
     const {
         clubId,
         clubName,
@@ -24,13 +26,6 @@ const MatchScreen2 = () => {
 
     const [competitive, setCompetitive] = useState(true);
     const [gender, setGender] = useState("all");
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-        Alert.alert("Je moet ingelogd zijn");
-        return;
-    }
 
     return (
 
@@ -118,7 +113,7 @@ const MatchScreen2 = () => {
                     ]}
                     onPress={() => {
                         router.push({
-                            pathname: "/match/matchDetail",
+                            pathname: "/match/create/review",
                             params: {
                                 clubId: clubId,
                                 clubName: clubName,
@@ -335,4 +330,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default MatchScreen2;
+export default Preferences;

@@ -1,3 +1,6 @@
+{/* Gebruiker kan de wedstrijden zien die hij/zij zelf heeft gemaakt of zich
+*   aan heeft geregistreerd */}
+
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Pressable } from "react-native";
 import { collection, doc, getDocs, query, where, writeBatch, Timestamp } from "firebase/firestore";
@@ -137,7 +140,7 @@ const Matches = () => {
 
     return (
         <View style={styles.screen}>
-            <Header title="Jouw matches" />
+            <Header title="Jouw wedstrijden" />
 
             <FlatList
                 data={matches}

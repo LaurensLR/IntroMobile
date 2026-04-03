@@ -1,13 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert, StyleSheet } from "react-native";
 import Header from "@/app/components/header";
+import {getWinner, InputSet, SetScore} from "@/src/lib/ranking";
 
-type InputSet = {
-    team1: string;
-    team2: string;
-};
-
-type SetScore = [number, number];
 
 const MatchScoreScreen = ()=>  {
     const [sets, setSets] = useState<InputSet[]>([
@@ -15,33 +10,6 @@ const MatchScoreScreen = ()=>  {
         { team1: "", team2: "" },
         { team1: "", team2: "" },
     ]);
-
-    const isValidSet = (a: number, b: number) => {
-        const max = Math.max(a, b);
-        const min = Math.min(a, b);
-
-        if (max < 6) return false;
-        return max - min >= 2;
-
-
-    };
-
-    const getWinner = (sets: SetScore[]) => {
-        let team1Wins = 0;
-        let team2Wins = 0;
-
-        for (const [a, b] of sets) {
-            if (!isValidSet(a, b)) return null;
-
-            if (a > b) team1Wins++;
-            else team2Wins++;
-        }
-
-        if (team1Wins >= 2) return "team1";
-        if (team2Wins >= 2) return "team2";
-
-        return null;
-    };
 
     const handleSubmit = () => {
         const parsedSets: SetScore[] = sets

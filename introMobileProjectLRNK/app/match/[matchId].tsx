@@ -1,3 +1,4 @@
+import {MatchItem, MatchPlayer} from "@/src/type/match";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,33 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import { getAuth } from "firebase/auth";
 
-type MatchPlayer = {
-    id: string;
-    name: string;
-    rank?: number;
-};
-
-type MatchItem = {
-    id: string;
-    clubId: string;
-    clubName: string;
-    fieldName?: string;
-    start: Timestamp;
-    end: Timestamp;
-    matchType: "competitive" | "friendly";
-    gender?: "all" | "men" | "women" | "mixed";
-    levelRange?: {
-        min: number;
-        max: number;
-    };
-    players?: MatchPlayer[];
-    teams?: {
-        team1?: string[];
-        team2?: string[];
-    };
-    status: "open" | "full" | "finished";
-    pricePerPlayer?: number;
-};
+{/* Een specifieke wedstrijdkaart */}
 
 type ClubAddress = {
     name?: string;
@@ -59,6 +34,8 @@ type ResolvedPlayer = {
     teamKey?: "team1" | "team2";
     slotIndex?: 0 | 1;
 };
+
+const now = new Date();
 
 const asString = (value: string | string[] | undefined) =>
     Array.isArray(value) ? value[0] : value;
@@ -307,6 +284,9 @@ const MatchView = () => {
             ? "Het resultaat van deze wedstrijd telt mee voor het level"
             : "Deze wedstrijd is ontspannen en heeft geen invloed op ranking";
 
+    const isMatchFinished = match.end.toDate() < now;
+    const hasScore = !!match.score;
+
     return (
         <View style={styles.screen}>
             <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
@@ -383,7 +363,7 @@ const MatchView = () => {
                                     onPress={() => {
                                         if (player.isOpenSpot && player.canJoin && player.teamKey && player.slotIndex !== undefined) {
                                             router.push({
-                                                pathname: "/match/joinPayment",
+                                                pathname: "/match/review",
                                                 params: {
                                                     matchId: match.id,
                                                     teamKey: player.teamKey,
@@ -410,7 +390,7 @@ const MatchView = () => {
                                     onPress={() => {
                                         if (player.isOpenSpot && player.canJoin && player.teamKey && player.slotIndex !== undefined) {
                                             router.push({
-                                                pathname: "/match/joinPayment",
+                                                pathname: "/match/review",
                                                 params: {
                                                     matchId: match.id,
                                                     teamKey: player.teamKey,
@@ -430,13 +410,42 @@ const MatchView = () => {
                     </View>
                 </View>
 
-                <Pressable
-                    style={styles.chatBtn}
-                    onPress={() => router.push(`/chats/${matchId}`)}
-                >
-                    <Ionicons name="chatbubble-outline" size={20} color="#fff" />
-                    <Text style={styles.chatBtnText}>Chat</Text>
-                </Pressable>
+                    {alreadyRegistered && (
+                        <Pressable
+                            style={styles.chatBtn}
+                            onPress={() => router.push(`/chats/${matchId}`)}
+                        >
+                            <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                            <Text style={styles.chatBtnText}>Chat</Text>
+                        </Pressable>
+                    )}
+                    {alreadyRegistered && (
+                        <Pressable
+                            style={[
+                                styles.scoreBtn,
+                                !isMatchFinished && !hasScore && { opacity: 0.5 }
+                            ]}
+                            disabled={!isMatchFinished && !hasScore}
+                            onPress={() => {
+                                if (!isMatchFinished && !hasScore) return;
+
+                                router.push({
+                                    pathname: hasScore
+                                        ? "/match/score/view"
+                                        : "/match/score/score",
+                                    params: { matchId }
+                                });
+                            }}
+                        >
+                            <Text style={styles.scoreBtnText}>
+                                {hasScore
+                                    ? "Score bekijken"
+                                    : isMatchFinished
+                                        ? "Score ingeven"
+                                        : "Score ingeven pas beschikbaar na wedstrijd"}
+                            </Text>
+                        </Pressable>
+                    )}
 
                 <View style={styles.clubInfoCard}>
                     {club?.club_image ? (
@@ -888,6 +897,22 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: "500",
     },
+    scoreBtn: {
+        alignSelf: "center",
+        backgroundColor: "#2f64f0",
+        borderRadius: 999, // ✅ pill
+        paddingHorizontal: 28,
+        paddingVertical: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 20,
+    },
+
+    scoreBtnText: {
+        color: "white",
+        fontWeight: "bold",
+    }
 });
 
 export default MatchView;

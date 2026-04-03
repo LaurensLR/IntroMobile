@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { collection, doc, getDoc, getDocs, runTransaction, Timestamp } from "firebase/firestore";
+import {addDoc, collection, doc, getDoc, getDocs, runTransaction, Timestamp} from "firebase/firestore";
 import { router, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import Header from "@/app/components/header";
@@ -20,6 +20,7 @@ type MatchItem = {
     start: Timestamp;
     end: Timestamp;
     players?: MatchPlayer[];
+    participants?: string[];
     teams?: {
         team1?: string[];
         team2?: string[];
@@ -48,7 +49,7 @@ const formatTimeRange = (start: Timestamp, end: Timestamp) => {
     return `${startTime} - ${endTime}`;
 };
 
-const JoinPayment = () => {
+const ReviewMatchJoin = () => {
     const params = useLocalSearchParams();
     const matchId = asString(params.matchId);
     const teamKeyRaw = asString(params.teamKey);
@@ -113,48 +114,51 @@ const JoinPayment = () => {
         setSubmitting(true);
 
         try {
+            const userSnap = await getDoc(doc(FIRESTORE_DB, "users", currentUser.uid));
+            const username = userSnap.data()?.username || "Speler";
+
             await runTransaction(FIRESTORE_DB, async (transaction) => {
                 const ref = doc(FIRESTORE_DB, "matches", matchId);
                 const snap = await transaction.get(ref);
 
-                if (!snap.exists()) {
-                    throw new Error("match_not_found");
-                }
+                if (!snap.exists()) throw new Error("match_not_found");
 
                 const latest = snap.data() as Omit<MatchItem, "id">;
+
                 const latestPlayers = [...(latest.players || [])];
                 const latestTeam1 = [...(latest.teams?.team1 || [])];
                 const latestTeam2 = [...(latest.teams?.team2 || [])];
+                const latestParticipants = [...(latest.participants || [])];
 
-                if (latest.status !== "open") {
-                    throw new Error("match_closed");
-                }
+                if (latest.status !== "open") throw new Error("match_closed");
 
-                const alreadyInPlayers = latestPlayers.some((player) => player.id === currentUser.uid);
-                const alreadyInTeams = latestTeam1.includes(currentUser.uid) || latestTeam2.includes(currentUser.uid);
+                const alreadyInPlayers = latestPlayers.some(p => p.id === currentUser.uid);
+                const alreadyInTeams =
+                    latestTeam1.includes(currentUser.uid) ||
+                    latestTeam2.includes(currentUser.uid);
+
                 if (alreadyInPlayers || alreadyInTeams) {
                     throw new Error("already_registered");
                 }
 
                 const targetTeam = teamKey === "team1" ? latestTeam1 : latestTeam2;
-                const firstSlotFilled = !!targetTeam[0];
-                const slotOccupied = !!targetTeam[slotIndex];
 
-                if (slotOccupied) {
-                    throw new Error("slot_taken");
-                }
+                if (targetTeam[slotIndex]) throw new Error("slot_taken");
 
-                if (slotIndex === 1 && !firstSlotFilled) {
-                    throw new Error("slot_order");
-                }
+                if (slotIndex === 1 && !targetTeam[0]) throw new Error("slot_order");
 
                 targetTeam[slotIndex] = currentUser.uid;
 
                 latestPlayers.push({
                     id: currentUser.uid,
-                    name: currentUser.displayName || usersById[currentUser.uid]?.username || "Speler",
+                    name: username,
                     rank: 1.5,
                 });
+
+                // 👇 NIEUW (voorkom duplicates)
+                if (!latestParticipants.includes(currentUser.uid)) {
+                    latestParticipants.push(currentUser.uid);
+                }
 
                 const filledSpots = [...latestTeam1, ...latestTeam2].filter(Boolean).length;
 
@@ -164,14 +168,29 @@ const JoinPayment = () => {
                         team2: latestTeam2,
                     },
                     players: latestPlayers,
+                    participants: latestParticipants, // 👈 BELANGRIJK
                     status: filledSpots >= 4 ? "full" : "open",
                 });
             });
 
+            await addDoc(
+                collection(FIRESTORE_DB, "matches", matchId, "messages"),
+                {
+                    type: "system",
+                    text: `${username} heeft de chat gejoined`,
+                    createdAt: Timestamp.now(),
+                }
+            );
+
             router.replace({
-                pathname: "/match/[matchId]",
-                params: { matchId, from: "payment" },
-            } as any);
+                pathname: "/confirmation",
+                params: {
+                    title: "Match gejoined!",
+                    subtitle: "Je bent succesvol toegevoegd aan de match.",
+                    matchId,
+                },
+            });
+
         } catch (error: any) {
             const code = error?.message;
             if (code === "already_registered") {
@@ -344,4 +363,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default JoinPayment;
+export default ReviewMatchJoin;

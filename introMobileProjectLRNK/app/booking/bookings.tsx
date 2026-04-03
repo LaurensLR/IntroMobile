@@ -1,11 +1,12 @@
 import React, {useCallback, useState} from "react";
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Pressable,} from "react-native";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {collection, doc, getDocs, query, updateDoc, where} from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import { getAuth } from "firebase/auth";
 import {router, useFocusEffect} from "expo-router";
 import {Booking, formatDate, formatStatus, formatTime, getStatusColor} from "../(tabs)/home";
 import Header from "@/app/components/header";
+
 
 const Bookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -28,15 +29,35 @@ const Bookings = () => {
                     );
 
                     const snapshot = await getDocs(q);
+                    const now = new Date();
 
-                    const data = snapshot.docs
-                        .map(doc => ({
-                            id: doc.id,
-                            ...(doc.data() as Omit<Booking, "id">),
-                        }))
-                        .sort((a, b) =>
-                            b.start.toDate().getTime() - a.start.toDate().getTime()
-                        );
+                    const data = await Promise.all(
+                        snapshot.docs.map(async (docSnap) => {
+                            const booking = {
+                                id: docSnap.id,
+                                ...(docSnap.data() as Omit<Booking, "id">),
+                            };
+
+                            const end = booking.end.toDate();
+
+                            if (end < now && booking.status === "confirmed") {
+                                await updateDoc(doc(FIRESTORE_DB, "bookings", booking.id), {
+                                    status: "completed"
+                                });
+
+                                return {
+                                    ...booking,
+                                    status: "completed"
+                                };
+                            }
+
+                            return booking;
+                        })
+                    );
+
+                    data.sort((a, b) =>
+                        b.start.toDate().getTime() - a.start.toDate().getTime()
+                    );
 
                     setBookings(data);
 
@@ -51,7 +72,6 @@ const Bookings = () => {
 
         }, [user])
     );
-
 
     if (loading) {
         return (
@@ -68,7 +88,6 @@ const Bookings = () => {
             </View>
         );
     }
-
 
     return (
         <View style={{ flex: 1, backgroundColor: "#f5f6fa" }}>
@@ -119,7 +138,6 @@ const Bookings = () => {
             />
         </View>
     );
-
 };
 
 

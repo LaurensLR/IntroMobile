@@ -1,7 +1,7 @@
 import {router, useLocalSearchParams} from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, ActivityIndicator, Pressable} from "react-native";
-import { doc, getDoc} from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import { getInitials} from "@/app/(tabs)/profile";
 import Header from "@/app/components/header";
@@ -9,81 +9,82 @@ import { followUser, unfollowUser} from "@/src/lib/follows";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useFollows } from "@/src/hooks/useFollows";
 
-
-
 const User = () => {
     const params = useLocalSearchParams();
     const rawUserId = params.userId;
     const userId = Array.isArray(rawUserId) ? rawUserId[0] : rawUserId;
-    const [loading, setLoading] = useState(true);
+    const [currentUserData, setCurrentUserData] = useState<any>(null);
     const { user: currentUser } = useAuth();
     const [profileUser, setProfileUser] = useState<any>(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const isOwnProfile =
+        !!currentUser?.uid && currentUser.uid === userId;
     const { followersCount, followingCount } = useFollows(userId);
-    const isOwnProfile = !!currentUser?.uid && currentUser.uid === userId;
 
-    const handleMessage = () => {
-        router.push({
-            pathname: "/",
-            params: { chatId: userId }
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+
+        const ref = doc(FIRESTORE_DB, "users", currentUser.uid);
+
+        const unsubscribe = onSnapshot(ref, (snap) => {
+            if (snap.exists()) {
+                setCurrentUserData(snap.data());
+            }
         });
-    };
 
-    const handleFollow = async () => {
-        if (!currentUser?.uid || !userId || !profileUser) return;
-        if (currentUser.uid === userId) return;
-
-        if (isFollowing) {
-            await unfollowUser(currentUser.uid, userId);
-            setIsFollowing(false);
-        } else {
-            await followUser(
-                currentUser.uid,
-                userId,
-                profileUser.username
-            );
-            setIsFollowing(true);
-        }
-    };
+        return () => unsubscribe();
+    }, [currentUser?.uid]);
 
     useEffect(() => {
         if (!userId) return;
 
-        const fetchUser = async () => {
-            try {
-                const ref = doc(FIRESTORE_DB, "users", userId);
-                const snap = await getDoc(ref);
+        const ref = doc(FIRESTORE_DB, "users", userId);
 
-                if (snap.exists()) {
-                    setProfileUser(snap.data());
-                }
-            } catch (e) {
-                console.log(e);
-            } finally {
-                setLoading(false);
+        const unsubscribe = onSnapshot(ref, (snap) => {
+            if (snap.exists()) {
+                setProfileUser(snap.data());
+            } else {
+                setProfileUser(null);
             }
-        };
+            setLoading(false);
+        });
 
-        fetchUser();
+        return () => unsubscribe();
     }, [userId]);
 
     useEffect(() => {
         if (!currentUser?.uid || !userId) return;
 
-        const checkFollow = async () => {
-            const ref = doc(
-                FIRESTORE_DB,
-                "users",
-                currentUser.uid,
-                "following",
-                userId
-            );
-            const snap = await getDoc(ref);
-            setIsFollowing(snap.exists());
-        };
+        const ref = doc(
+            FIRESTORE_DB,
+            "users",
+            currentUser.uid,
+            "following",
+            userId
+        );
 
-        checkFollow();
-    }, [currentUser, userId]);
+        const unsubscribe = onSnapshot(ref, (snap) => {
+            setIsFollowing(snap.exists());
+        });
+
+        return () => unsubscribe();
+    }, [currentUser?.uid, userId]);
+
+    const handleFollow = async () => {
+        if (!currentUser?.uid || !userId || !profileUser) return;
+
+        if (isFollowing) {
+            await unfollowUser(currentUser.uid, userId);
+        } else {
+            await followUser(
+                currentUser.uid,
+                userId,
+                currentUserData?.username,
+                profileUser?.username
+            );
+        }
+    };
 
     if (loading) {
         return (
@@ -95,83 +96,95 @@ const User = () => {
 
     if (!profileUser) {
         return (
-            <View style={styles.center}>
-                <Text>User niet gevonden</Text>
+            <View style={{ flex: 1 }}>
+                <Header title="Profiel" />
+
+                <View style={styles.center}>
+                    <Text>User niet gevonden</Text>
+                </View>
             </View>
         );
     }
 
-    console.log("USER:", profileUser);
+
     return (
         <View style={styles.container}>
             <Header title="Profiel" />
-            <View style={{padding: 20}}>
 
+            <View style={{ padding: 20 }}>
                 <View style={styles.profileRow}>
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>
-                            {getInitials(profileUser.username)}
+                            {getInitials(profileUser.username || "Speler")}
                         </Text>
                     </View>
 
                     <View>
-                        <Text style={styles.name}>{profileUser.username}</Text>
+                        <Text style={styles.name}>
+                            {profileUser.username || "Speler"}
+                        </Text>
                         <Text style={styles.location}>
                             Speelt padel
                         </Text>
                     </View>
                 </View>
 
-                {/* STATS */}
                 <View style={styles.statsRow}>
                     <View style={styles.stat}>
                         <Text style={styles.statNumber}>0</Text>
                         <Text>Wedstrijden</Text>
                     </View>
 
-                    <View style={styles.stat}>
+                    <Pressable
+                        style={styles.stat}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/follows",
+                                params: {
+                                    tab: "followers",
+                                    rawUserId
+                                },
+                            })
+                        }
+                    >
                         <Text style={styles.statNumber}>{followersCount}</Text>
                         <Text>Volgers</Text>
-                    </View>
+                    </Pressable>
 
-                    <View style={styles.stat}>
+                    <Pressable
+                        style={styles.stat}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/follows",
+                                params: {
+                                    tab: "following",
+                                    rawUserId
+                                },
+                            })
+                        }
+                    >
                         <Text style={styles.statNumber}>{followingCount}</Text>
                         <Text>Volgend</Text>
-                    </View>
+                    </Pressable>
                 </View>
 
                 <View style={styles.buttons}>
                     {!isOwnProfile && (
                         <Pressable
-                            style={({ pressed }) => [
-                                styles.followBtn,
-                                pressed && { opacity: 0.7 }
-                            ]}
+                            style={styles.followBtn}
                             onPress={handleFollow}
                         >
-                            <Text style={{ color: "white" }}>
+                            <Text style={{ color: "white", fontWeight: "bold" }}>
                                 {isFollowing ? "Volgend" : "Volgen"}
                             </Text>
                         </Pressable>
                     )}
 
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.messageBtn,
-                            pressed && { opacity: 0.7 }
-                        ]}
-                        onPress={handleMessage}
-                    >
-                        <Text style={{ color: "#345fff" }}>Bericht</Text>
-                    </Pressable>
-
                 </View>
             </View>
-
-
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {

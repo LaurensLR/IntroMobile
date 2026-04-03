@@ -1,35 +1,45 @@
 import React, {useEffect} from "react";
 import {View, StyleSheet, Text, Pressable} from "react-native";
-import {router} from "expo-router";
+import {router, useLocalSearchParams} from "expo-router";
 
-const MatchConfirmation = () => {
+const Confirmation = () => {
+    const params = useLocalSearchParams<{
+        title?: string;
+        subtitle?: string;
+        redirect?: string;
+    }>();
+
+    const title = params.title || "Succes!";
+    const subtitle =
+        params.subtitle || "Je actie is succesvol uitgevoerd.";
+    const redirect = params.redirect || "/(tabs)/home";
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            router.replace("/(tabs)/home");
-        }, 300000); // 3 sec
+            router.replace(redirect as any);
+        }, 3000);
 
         return () => clearTimeout(timeout);
-    }, []);
+    }, [redirect]);
 
     return (
         <View style={styles.container}>
             <View style={styles.circle}>
                 <Text style={styles.check}>✓</Text>
             </View>
-            <Text style={styles.title}>Wedstrijd bevestigd!</Text>
-            <Text style={styles.subtitle}>
-                Je wedstrijd is succesvol gereserveerd.
-            </Text>
+
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+
             <Pressable
                 style={styles.button}
-                onPress={() => router.push("/(tabs)/home")}
+                onPress={() => router.push(redirect as any)}
             >
-                <Text style={styles.buttonText}>Ga naar home</Text>
+                <Text style={styles.buttonText}>Verder</Text>
             </Pressable>
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -85,4 +95,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default MatchConfirmation;
+export default Confirmation;

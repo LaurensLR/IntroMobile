@@ -1,3 +1,5 @@
+{/* Gebruiker kan een wedstrijd zoeken */}
+
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { collection, getDocs, query, Timestamp, where } from "firebase/firestore";

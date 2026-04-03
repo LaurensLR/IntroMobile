@@ -1,14 +1,15 @@
+{/* Gebruiker ziet een overzicht van alle gekozen opties en kan de wedstrijd boeken*/}
+
 import React from "react";
 import {View, StyleSheet, Text, Alert, Pressable} from "react-native";
 import {router} from "expo-router";
 import {addDoc, collection, getDocs, query, Timestamp, where} from "firebase/firestore";
 import {FIRESTORE_DB} from "@/app/lib/firebase/firebaseConfig";
-import { getAuth } from "firebase/auth";
 import { useLocalSearchParams } from "expo-router";
 import {MONTHS} from "@/app/clubs/[clubId]";
 import Header from "@/app/components/header";
 import {createNotification} from "@/src/lib/notifications";
-
+import {getAuth} from "firebase/auth";
 
 type player = {
     id: string;
@@ -16,7 +17,7 @@ type player = {
     rank: number;
 };
 
-type Match = {
+export type Match = {
     clubId: string,
     clubName: string,
     fieldId: string,
@@ -34,6 +35,8 @@ type Match = {
 
     players: player[],
 
+    participants: string[],
+
     teams: {
         team1: string[],
         team2: string[],
@@ -48,7 +51,9 @@ type Match = {
     createdBy: string,
 };
 
-const MatchDetail = () => {
+const auth = getAuth();
+
+const Review = () => {
     const {
         clubId,
         clubName,
@@ -72,13 +77,12 @@ const MatchDetail = () => {
     const matchTypeValue = asString(matchType);
     const genderValue = asString(gender);
 
-    const auth = getAuth();
-    if (!auth.currentUser) {
-        Alert.alert("Fout", "Je moet ingelogd zijn");
+    const user = auth.currentUser;
+    if (!user) {
+        Alert.alert("Je moet ingelogd zijn");
         return;
     }
-    const user = auth.currentUser;
-    const userId = auth.currentUser.uid
+    const userId = auth.currentUser.uid;
 
     const parseToDate = (dateStr: string, timeStr: string) => {
         const [hours, minutes] = timeStr.split(":").map(Number);
@@ -121,10 +125,6 @@ const MatchDetail = () => {
     endDate.setMinutes(endDate.getMinutes() + 90);
 
     const bookMatch = async () => {
-        if (!user) {
-            Alert.alert("Je moet ingelogd zijn");
-            return;
-        }
 
         const bookingsQuery = query(
             collection(FIRESTORE_DB, "bookings"),
@@ -198,8 +198,10 @@ const MatchDetail = () => {
                 },
             ],
 
+            participants: [user.uid],
+
             teams: {
-                team1: [user.uid],
+                team1: [userId],
                 team2: [],
             },
 
@@ -226,10 +228,18 @@ const MatchDetail = () => {
                 }
             });
 
-            router.push("/match/MatchConfirmation");
+            router.push({
+                pathname: "/confirmation",
+                params: {
+                    title: "Wedstrijd bevestigd!",
+                    subtitle: "Je wedstrijd is succesvol gereserveerd.",
+                    redirect: "/(tabs)/home",
+                },
+            });
 
         } catch (error) {
             console.error("Error:", error);
+            Alert.alert("Fout", "Er ging iets mis bij het aanmaken van de match.");
         }
     };
 
@@ -400,4 +410,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default MatchDetail;
+export default Review;

@@ -1,3 +1,5 @@
+{/* Gebruiker kan een club, veld, datum en tijd kiezen */}
+
 import React, {useEffect, useState} from "react";
 import {View, StyleSheet, Text, TouchableOpacity, ScrollView, TextInput, Pressable, Image} from "react-native";
 import {collection, getDocs, query, where} from "@firebase/firestore";
@@ -15,7 +17,7 @@ type ReservedSlot = {
     end: Date;
 };
 
-const MatchScreen1 = () => {
+const Details = () => {
 
     const [search, setSearch] = useState("");
     const [clubs, setClubs] = useState<Club[]>([]);
@@ -324,7 +326,7 @@ const MatchScreen1 = () => {
                                             style={styles.nextButton}
                                             onPress={() =>
                                                 router.push({
-                                                    pathname: "/match/matchScreen2",
+                                                    pathname: "/match/create/preferences",
                                                     params: {
                                                         clubId: club.id,
                                                         clubName: club.name,
@@ -521,4 +523,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default MatchScreen1;
+export default Details;

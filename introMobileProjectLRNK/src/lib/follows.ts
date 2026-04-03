@@ -2,46 +2,56 @@ import { doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
 import {createNotification} from "@/src/lib/notifications";
 
-export const followUser = async (currentUserId: string, targetUserId: string, username: string) => {
-    if (currentUserId === targetUserId) {
-        return;
-    }
+export const followUser = async (
+    currentUserId: string,
+    targetUserId: string,
+    currentUsername: string,
+    targetUsername: string
+) => {
+    if (currentUserId === targetUserId) return;
 
-    console.log({ targetUserId: targetUserId });
-    console.log({currentUserId: currentUserId});
+    try {
+        await setDoc(
+            doc(FIRESTORE_DB, "users", targetUserId, "followers", currentUserId),
+            {
+                userId: currentUserId,
+                username: currentUsername,
+                createdAt: serverTimestamp()
+            }
+        );
 
-    await setDoc(
-        doc(FIRESTORE_DB, "users", targetUserId, "followers", currentUserId),
-        {
-            userId: currentUserId,
-            username: username,
-            createdAt: serverTimestamp()
-        }
-    );
+        await setDoc(
+            doc(FIRESTORE_DB, "users", currentUserId, "following", targetUserId),
+            {
+                userId: targetUserId,
+                username: targetUsername,
+                createdAt: serverTimestamp()
+            }
+        );
 
-
-
-    await setDoc(
-        doc(FIRESTORE_DB, "users", currentUserId, "following", targetUserId),
-        {
+        await createNotification({
             userId: targetUserId,
-            username: currentUserId,
-            createdAt: serverTimestamp()
-        }
-    );
+            title: "Nieuwe volger",
+            body: `${currentUsername} volgt je`,
+            data: {
+                type: "follow",
+                followerId: currentUserId
+            }
+        });
 
-    await createNotification({
-        userId: targetUserId,
-        title: "Nieuwe volger",
-        body: `${username} volgt je`,
-        data: {
-            type: "follow",
-            followerId: currentUserId
-        }
-    });
+    } catch (error) {
+        console.error("Follow error:", error);
+    }
 };
 
-export const unfollowUser = async (currentUserId: string, targetUserId: string) => {
-    await deleteDoc(doc(FIRESTORE_DB, "users", targetUserId, "followers", currentUserId));
-    await deleteDoc(doc(FIRESTORE_DB, "users", currentUserId, "following", targetUserId));
+export const unfollowUser = async (
+    currentUserId: string,
+    targetUserId: string
+) => {
+    try {
+        await deleteDoc(doc(FIRESTORE_DB, "users", targetUserId, "followers", currentUserId));
+        await deleteDoc(doc(FIRESTORE_DB, "users", currentUserId, "following", targetUserId));
+    } catch (error) {
+        console.error("Unfollow error:", error);
+    }
 };

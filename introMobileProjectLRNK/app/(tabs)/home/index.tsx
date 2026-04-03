@@ -270,23 +270,23 @@ const App = () => {
                         label="Boek"
                     />
                     <CustomButton
-                        onPress={() => router.push("/score")}
+                        //https://playtomic.com/blog/basic-padel-rules-beginners
+                        onPress={() => router.push("/match/score")}
                         imageSource={require("../../../assets/images/learningPicto.png")}
                         label="Leren"
                     />
                     <CustomButton
-                        onPress={() => router.push("/match/matchScreen1")}
+                        onPress={() => router.push("/match/create/details")}
                         imageSource={require("../../../assets/images/gamePicto.png")}
                         label="Match"
                     />
                     <CustomButton
-                        onPress={() => router.push("/(tabs)/home/searchMatches" as any)}
+                        onPress={() => router.push("/match/search" as any)}
                         imageSource={require("../../../assets/images/matchPicto.png")}
                         label="Zoek"
                     />
                 </View>
 
-                {/* SECTION */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Boekingen</Text>
 
@@ -356,18 +356,17 @@ const App = () => {
                     </ScrollView>
                 )}
 
-                {/* SECTION */}
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Matches</Text>
+                    <Text style={styles.sectionTitle}>Wedstrijden</Text>
 
                     <Pressable
-                        onPress={() => router.push("/match/matches")}
+                        onPress={() => router.push("/match/joinedMatches")}
                         style={({ pressed }) => [
                             styles.seeAllBtn,
                             pressed && { opacity: 0.6 }
                         ]}
                     >
-                        <Text style={styles.seeAllText}>Alle matches</Text>
+                        <Text style={styles.seeAllText}>Alle wedstrijden</Text>
                     </Pressable>
                 </View>
 

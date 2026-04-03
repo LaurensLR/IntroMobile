@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {View, StyleSheet, Text, TextInput, Pressable, FlatList} from "react-native";
+import {View, StyleSheet, Text, TextInput, FlatList} from "react-native";
 import { collection, query, getDocs } from "firebase/firestore";
 import { FIRESTORE_DB } from "@/app/lib/firebase/firebaseConfig";
-import {router} from "expo-router";
 import Header from "@/app/components/header";
+import UserCard from "@/app/components/UserCard";
 
 const SearchUsers = () => {
     const [search, setSearch] = useState("");
@@ -31,13 +31,6 @@ const SearchUsers = () => {
             .includes(search.toLowerCase())
     );
 
-    const getInitials = (name: string) =>
-        name
-            .split(" ")
-            .map(n => n[0])
-            .join("")
-            .toUpperCase();
-
     return (
         <View style={{ flex: 1, backgroundColor: "#f5f6fa" }}>
             <Header title="Zoek spelers" />
@@ -63,30 +56,11 @@ const SearchUsers = () => {
                         ) : null
                     }
                     renderItem={({ item }) => (
-                        <Pressable
-                            style={styles.userCard}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/users/[userId]",
-                                    params: { userId: item.id }
-                                })
-                            }
-                        >
-                            <View style={styles.userRow}>
-
-                                <View style={styles.avatar}>
-                                    <Text style={styles.avatarText}>
-                                        {getInitials(item.username)}
-                                    </Text>
-                                </View>
-
-                                <View>
-                                    <Text style={styles.username}>{item.username}</Text>
-                                    <Text style={styles.level}>{item.level}</Text>
-                                </View>
-
-                            </View>
-                        </Pressable>
+                        <UserCard
+                            id={item.id}
+                            username={item.username}
+                            level={item.level}
+                        />
                     )}
                 />
             </View>

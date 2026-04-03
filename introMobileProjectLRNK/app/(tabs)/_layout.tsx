@@ -88,13 +88,6 @@ const HomeLayout = () => {
                 }}
             />
 
-            <Tabs.Screen
-                name="home/searchMatches"
-                options={{
-                    href: null,
-                    headerShown: false,
-                }}
-            />
         </Tabs>
     );
 };

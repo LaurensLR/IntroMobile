@@ -20,27 +20,25 @@ type Notification = {
     createdAt?: any;
     data?: {
         bookingId?: string;
+        matchId?: string;
     };
 };
 
-const FieldBookingNotificationCard = ({ notification }: { notification: Notification }) => {
+const NotificationCard = ({ notification }: { notification: Notification }) => {
 
     const router = useRouter();
 
     const handlePress = async () => {
         if (!userId) return;
-
         if (!notification.read) {
             await markNotificationAsRead(userId, notification.id);
         }
-
         if (notification.data?.bookingId) {
             router.push(`/booking/${notification.data.bookingId}`);
         }
-
-        //if (notification.data?.followingId) {
-        //    router.push(`/user/${notification.data.followerId}`);
-       // }
+        if (notification.data?.matchId) {
+            router.push(`/match/${notification.data.matchId}`);
+        }
     };
 
     const renderRightActions = () => (
@@ -121,7 +119,7 @@ const NotificationScreen = () => {
             ) : (
                 <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
                     {notifications.map(item => (
-                        <FieldBookingNotificationCard key={item.id} notification={item} />
+                        <NotificationCard key={item.id} notification={item} />
                     ))}
                 </ScrollView>
             )}
@@ -151,7 +149,9 @@ const styles = StyleSheet.create({
     },
 
     unreadCard: {
-        backgroundColor: '#e8f0ff'
+        backgroundColor: "#eef4ff",
+        borderLeftWidth: 4,
+        borderLeftColor: "#007aff",
     },
 
     cardContent: {
