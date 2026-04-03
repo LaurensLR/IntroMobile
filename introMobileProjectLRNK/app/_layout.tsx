@@ -9,7 +9,6 @@ export default function RootLayout() {
                 <Stack.Screen name="Login/Login" />
                 <Stack.Screen name="users/[userId]" />
                 <Stack.Screen name="clubs/[clubId]" />
-                <Stack.Screen name="score/index" />
             </Stack>
         </GestureHandlerRootView>
     );
